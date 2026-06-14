@@ -1,1220 +1,626 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>SpeedNCash Predictor</title>
+<title>Speed N Cash - Predictor</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050510;--card:rgba(255,255,255,0.03);--border:rgba(255,255,255,0.06);
+  --orange:#f97316;--orange-dim:rgba(249,115,22,0.15);--orange-glow:rgba(249,115,22,0.3);
+  --blue:#3b82f6;--blue-dim:rgba(59,130,246,0.15);--blue-glow:rgba(59,130,246,0.3);
+  --text:#e5e7eb;--text2:#9ca3af;--text3:#4b5563;
+  --green:#22c55e;--red:#ef4444;
+}
+body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+.app{max-width:500px;margin:0 auto;padding:0 12px 80px}
 
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* Header */
+.header{position:sticky;top:0;z-index:100;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);background:rgba(5,5,16,0.92);border-bottom:1px solid var(--border);padding:12px 0;margin:0 -12px;padding-left:12px;padding-right:12px;display:flex;align-items:center;justify-content:space-between}
+.logo{font-size:1.15rem;font-weight:900;letter-spacing:4px;background:linear-gradient(135deg,var(--orange),#fbbf24);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.badge{font-size:.55rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:3px 8px;border-radius:5px;border:1px solid rgba(249,115,22,0.2);background:rgba(249,115,22,0.06);color:var(--orange)}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px rgba(34,197,94,0.6);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.status-bar{display:flex;align-items:center;gap:6px;font-size:.6rem;color:var(--text2)}
+.status-bar.offline .status-dot{background:var(--red);box-shadow:0 0 8px rgba(239,68,68,0.6)}
 
-  :root {
-    --bg: #050510;
-    --card: rgba(255,255,255,0.03);
-    --card-hover: rgba(255,255,255,0.06);
-    --border: rgba(255,255,255,0.06);
-    --border-light: rgba(255,255,255,0.1);
-    --orange: #f97316;
-    --orange-dim: rgba(249,115,22,0.15);
-    --orange-glow: rgba(249,115,22,0.3);
-    --blue: #3b82f6;
-    --blue-dim: rgba(59,130,246,0.15);
-    --blue-glow: rgba(59,130,246,0.3);
-    --amber: #f59e0b;
-    --amber-dim: rgba(245,158,11,0.15);
-    --green: #22c55e;
-    --green-dim: rgba(34,197,94,0.15);
-    --red: #ef4444;
-    --text-1: #f3f4f6;
-    --text-2: #9ca3af;
-    --text-3: #4b5563;
-    --purple: #a855f7;
-    --purple-dim: rgba(168,85,247,0.15);
-  }
+/* Vehicles Header */
+.vehicles{display:flex;align-items:center;justify-content:center;gap:16px;padding:16px 0 8px}
+.vehicle-icon{display:flex;flex-direction:column;align-items:center;gap:4px}
+.vehicle-icon .dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800}
+.vehicle-icon.orange .dot{background:var(--orange-dim);border:2px solid var(--orange);color:var(--orange)}
+.vehicle-icon.blue .dot{background:var(--blue-dim);border:2px solid var(--blue);color:var(--blue)}
+.vehicle-icon span:last-child{font-size:.6rem;font-weight:600;letter-spacing:1px;text-transform:uppercase}
+.vs{font-size:.75rem;font-weight:900;color:var(--text3);letter-spacing:2px}
 
-  html { font-size: 16px; }
+/* Stats */
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:12px 0}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 8px;text-align:center}
+.stat-val{font-size:1.1rem;font-weight:800;letter-spacing:1px}
+.stat-val.orange{color:var(--orange)}
+.stat-val.blue{color:var(--blue)}
+.stat-label{font-size:.5rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
 
-  body {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    background: var(--bg);
-    color: var(--text-1);
-    min-height: 100vh;
-    -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
-  }
+/* Prediction Card */
+.prediction-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin:12px 0;position:relative;overflow:hidden}
+.prediction-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.prediction-card.pred-orange::before{background:linear-gradient(90deg,transparent,var(--orange),transparent)}
+.prediction-card.pred-blue::before{background:linear-gradient(90deg,transparent,var(--blue),transparent)}
+.prediction-card.pred-waiting::before{background:linear-gradient(90deg,transparent,var(--text3),transparent)}
+.pred-title{font-size:.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px}
+.pred-result{display:flex;align-items:center;justify-content:space-between}
+.pred-vehicle{display:flex;align-items:center;gap:10px}
+.pred-vehicle .icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.75rem}
+.pred-vehicle.orange .icon{background:var(--orange-dim);border:2px solid var(--orange);color:var(--orange)}
+.pred-vehicle.blue .icon{background:var(--blue-dim);border:2px solid var(--blue);color:var(--blue)}
+.pred-vehicle .name{font-size:.85rem;font-weight:700;letter-spacing:1px}
+.pred-vehicle.orange .name{color:var(--orange)}
+.pred-vehicle.blue .name{color:var(--blue)}
+.pred-confidence{text-align:right}
+.pred-confidence .val{font-size:1.3rem;font-weight:900}
+.pred-confidence .lbl{font-size:.5rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px}
+.pred-reasons{margin-top:10px;display:flex;flex-direction:column;gap:4px}
+.pred-reason{font-size:.6rem;color:var(--text2);display:flex;align-items:center;gap:6px}
+.pred-reason .dot{width:4px;height:4px;border-radius:50%;background:var(--text3);flex-shrink:0}
+.pred-waiting-text{color:var(--text3);font-size:.75rem;text-align:center;padding:8px 0}
 
-  .app {
-    max-width: 500px;
-    margin: 0 auto;
-    padding: 0 16px 40px;
-  }
+/* Race Track */
+.section-title{font-size:.65rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:2px;margin:16px 0 8px}
+.race-track{display:flex;flex-direction:column;gap:3px}
+.race-row{display:flex;align-items:center;height:28px;border-radius:6px;overflow:hidden;position:relative;font-size:.55rem;font-weight:600}
+.race-row .lane-orange{position:absolute;left:0;top:0;bottom:0;background:var(--orange-dim);border-right:2px solid var(--orange);z-index:1;transition:width .6s ease}
+.race-row .lane-blue{position:absolute;right:0;top:0;bottom:0;background:var(--blue-dim);border-left:2px solid var(--blue);z-index:1;transition:width .6s ease}
+.race-row .winner-label{position:absolute;z-index:2;font-weight:800;letter-spacing:1px;text-transform:uppercase;text-shadow:0 1px 4px rgba(0,0,0,.8);transition:all .4s ease}
+.race-row.orange-won .winner-label{color:var(--orange);right:8px}
+.race-row.blue-won .winner-label{color:var(--blue);left:8px}
+.race-row .coef-label{position:absolute;z-index:2;opacity:.5;font-size:.5rem}
+.race-row .coef-orange{color:var(--orange);right:60px}
+.race-row .coef-blue{color:var(--blue);left:60px}
 
-  /* Animations */
-  @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-  @keyframes pulse-orange {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(249,115,22,0.4); }
-    50% { box-shadow: 0 0 20px 4px rgba(249,115,22,0.15); }
-  }
-  @keyframes pulse-blue {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0.4); }
-    50% { box-shadow: 0 0 20px 4px rgba(59,130,246,0.15); }
-  }
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-  @keyframes shimmer {
-    0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
-  }
-  @keyframes slideReveal {
-    from { opacity: 0; transform: scale(0.95) translateY(10px); }
-    to { opacity: 1; transform: scale(1) translateY(0); }
-  }
-  @keyframes barGrow {
-    from { transform: scaleX(0); }
-    to { transform: scaleX(1); }
-  }
-  @keyframes countUp {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
+/* Chart */
+.chart-container{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px;margin:8px 0}
+.chart-canvas{width:100%;height:180px;display:block}
 
-  .section {
-    animation: fadeInUp 0.5s ease-out both;
-    margin-bottom: 16px;
-  }
-  .section:nth-child(1) { animation-delay: 0.05s; }
-  .section:nth-child(2) { animation-delay: 0.1s; }
-  .section:nth-child(3) { animation-delay: 0.15s; }
-  .section:nth-child(4) { animation-delay: 0.2s; }
-  .section:nth-child(5) { animation-delay: 0.25s; }
-  .section:nth-child(6) { animation-delay: 0.3s; }
-  .section:nth-child(7) { animation-delay: 0.35s; }
+/* Streak */
+.streak-row{display:flex;gap:8px;margin:8px 0}
+.streak-card{flex:1;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px;text-align:center}
+.streak-card .val{font-size:1.2rem;font-weight:900}
+.streak-card.orange .val{color:var(--orange)}
+.streak-card.blue .val{color:var(--blue)}
+.streak-card .lbl{font-size:.5rem;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
 
-  /* HEADER */
-  .header {
-    text-align: center;
-    padding: 28px 0 20px;
-  }
-  .header-title {
-    font-size: 1.75rem;
-    font-weight: 900;
-    letter-spacing: 0.15em;
-    background: linear-gradient(135deg, var(--orange), var(--amber));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    line-height: 1.2;
-  }
-  .header-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    margin-top: 8px;
-    padding: 4px 14px;
-    background: var(--amber-dim);
-    border: 1px solid rgba(245,158,11,0.2);
-    border-radius: 100px;
-    font-size: 0.65rem;
-    font-weight: 700;
-    letter-spacing: 0.25em;
-    color: var(--amber);
-    text-transform: uppercase;
-  }
-  .header-badge svg { width: 12px; height: 12px; }
-  .vehicles-row {
-    display: flex;
-    justify-content: center;
-    gap: 24px;
-    margin-top: 16px;
-  }
-  .vehicle-icon {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    font-size: 1.5rem;
-  }
-  .vehicle-label {
-    font-size: 0.6rem;
-    font-weight: 700;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-  }
-  .vehicle-label.orange { color: var(--orange); }
-  .vehicle-label.blue { color: var(--blue); }
-  .vs-badge {
-    align-self: center;
-    font-size: 0.65rem;
-    font-weight: 800;
-    color: var(--text-3);
-    letter-spacing: 0.1em;
-  }
+/* Table */
+.table-container{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin:8px 0}
+.table-row{display:grid;grid-template-columns:28px 1fr 1fr 70px 60px;align-items:center;padding:6px 10px;font-size:.6rem;border-bottom:1px solid var(--border)}
+.table-row:last-child{border-bottom:none}
+.table-row.header{font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;font-size:.5rem;background:rgba(255,255,255,0.02)}
+.table-row .num{color:var(--text3);text-align:center}
+.table-row .coef-o{color:var(--orange);font-weight:600;text-align:center}
+.table-row .coef-b{color:var(--blue);font-weight:600;text-align:center}
+.table-row .winner{text-align:center}
+.table-row .winner span{padding:2px 6px;border-radius:4px;font-weight:700;font-size:.5rem;letter-spacing:1px}
+.table-row .winner .w-o{background:var(--orange-dim);color:var(--orange)}
+.table-row .winner .w-b{background:var(--blue-dim);color:var(--blue)}
+.table-row .top{color:#fbbf24;font-weight:600;text-align:center}
 
-  /* CARD BASE */
-  .card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 16px;
-    backdrop-filter: blur(10px);
-  }
+/* Loading */
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;gap:12px}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--orange);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:.7rem;color:var(--text3)}
 
-  /* STATS BAR */
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-  }
-  .stat-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 12px 8px;
-    text-align: center;
-  }
-  .stat-value {
-    font-size: 1.25rem;
-    font-weight: 800;
-    line-height: 1.2;
-    animation: countUp 0.6s ease-out both;
-  }
-  .stat-value.orange { color: var(--orange); }
-  .stat-value.blue { color: var(--blue); }
-  .stat-value.white { color: var(--text-1); }
-  .stat-label {
-    font-size: 0.6rem;
-    font-weight: 600;
-    color: var(--text-3);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    margin-top: 4px;
-  }
+/* Animations */
+.fade-in{animation:fadeIn .4s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.new-round{animation:newRound .6s ease}
+@keyframes newRound{0%{opacity:0;transform:scale(0.95)}50%{transform:scale(1.02)}100%{opacity:1;transform:scale(1)}}
 
-  /* RACE TRACK */
-  .section-title {
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--text-3);
-    margin-bottom: 12px;
-    padding-left: 2px;
-  }
-  .race-track {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-  }
-  .race-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    height: 22px;
-  }
-  .race-label {
-    font-size: 0.55rem;
-    font-weight: 600;
-    color: var(--text-3);
-    width: 20px;
-    text-align: right;
-    flex-shrink: 0;
-  }
-  .race-bars {
-    flex: 1;
-    display: flex;
-    gap: 2px;
-    height: 100%;
-    position: relative;
-  }
-  .race-bar {
-    height: 100%;
-    border-radius: 3px;
-    transform-origin: left center;
-    animation: barGrow 0.8s ease-out both;
-    position: relative;
-    min-width: 2px;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    padding-right: 4px;
-  }
-  .race-bar.orange-bar {
-    background: linear-gradient(90deg, var(--orange-dim), rgba(249,115,22,0.4));
-  }
-  .race-bar.orange-bar.winner {
-    background: linear-gradient(90deg, var(--orange), rgba(249,115,22,0.7));
-  }
-  .race-bar.blue-bar {
-    background: linear-gradient(90deg, var(--blue-dim), rgba(59,130,246,0.4));
-  }
-  .race-bar.blue-bar.winner {
-    background: linear-gradient(90deg, var(--blue), rgba(59,130,246,0.7));
-  }
-  .race-bar.loser {
-    opacity: 0.25;
-  }
-  .race-coef {
-    font-size: 0.5rem;
-    font-weight: 700;
-    color: rgba(255,255,255,0.9);
-    white-space: nowrap;
-  }
-  .race-winner-dot {
-    position: absolute;
-    right: -1px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-  }
-  .race-winner-dot.orange { background: var(--orange); box-shadow: 0 0 6px var(--orange-glow); }
-  .race-winner-dot.blue { background: var(--blue); box-shadow: 0 0 6px var(--blue-glow); }
-
-  /* PREDICTION / SIGNAL */
-  .signal-card {
-    background: linear-gradient(135deg, rgba(249,115,22,0.06), rgba(59,130,246,0.06));
-    border: 1px solid rgba(245,158,11,0.15);
-    border-radius: 16px;
-    padding: 20px;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-  }
-  .signal-card::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(ellipse at center, rgba(245,158,11,0.03) 0%, transparent 70%);
-    pointer-events: none;
-  }
-  .signal-title {
-    font-size: 0.65rem;
-    font-weight: 700;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--text-2);
-    margin-bottom: 16px;
-  }
-  .signal-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 14px 32px;
-    background: linear-gradient(135deg, var(--orange), #ea580c);
-    color: white;
-    border: none;
-    border-radius: 12px;
-    font-family: inherit;
-    font-size: 0.85rem;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    position: relative;
-    overflow: hidden;
-  }
-  .signal-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 8px 25px rgba(249,115,22,0.3);
-  }
-  .signal-btn:active {
-    transform: translateY(0);
-  }
-  .signal-btn.loading {
-    pointer-events: none;
-    opacity: 0.8;
-  }
-  .signal-btn .spinner {
-    display: none;
-    width: 18px;
-    height: 18px;
-    border: 2px solid rgba(255,255,255,0.3);
-    border-top-color: white;
-    border-radius: 50%;
-    animation: spin 0.7s linear infinite;
-  }
-  .signal-btn.loading .spinner { display: block; }
-  .signal-btn.loading .btn-text { display: none; }
-  .signal-btn.loading .btn-loading-text { display: inline; }
-  .signal-btn .btn-loading-text { display: none; }
-
-  .signal-result {
-    display: none;
-    margin-top: 20px;
-    animation: slideReveal 0.5s ease-out both;
-  }
-  .signal-result.visible { display: block; }
-  .signal-prediction {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    margin-bottom: 14px;
-  }
-  .signal-vehicle-icon {
-    font-size: 2rem;
-  }
-  .signal-vehicle-name {
-    font-size: 1.2rem;
-    font-weight: 800;
-    letter-spacing: 0.05em;
-  }
-  .signal-vehicle-name.orange { color: var(--orange); }
-  .signal-vehicle-name.blue { color: var(--blue); }
-  .signal-confidence {
-    margin-bottom: 14px;
-  }
-  .confidence-bar-bg {
-    width: 100%;
-    height: 6px;
-    background: rgba(255,255,255,0.06);
-    border-radius: 100px;
-    overflow: hidden;
-    margin-top: 6px;
-  }
-  .confidence-bar-fill {
-    height: 100%;
-    border-radius: 100px;
-    transition: width 1s ease-out;
-  }
-  .confidence-label {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-  }
-  .confidence-text {
-    font-size: 0.65rem;
-    font-weight: 600;
-    color: var(--text-2);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-  }
-  .confidence-value {
-    font-size: 1rem;
-    font-weight: 800;
-  }
-  .signal-factors {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    text-align: left;
-  }
-  .signal-factor {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    background: rgba(255,255,255,0.03);
-    border-radius: 8px;
-    font-size: 0.7rem;
-    color: var(--text-2);
-  }
-  .factor-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-  .factor-dot.green { background: var(--green); }
-  .factor-dot.amber { background: var(--amber); }
-  .factor-dot.red { background: var(--red); }
-
-  /* TABLE */
-  .table-wrapper {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  .rounds-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.72rem;
-  }
-  .rounds-table thead th {
-    padding: 8px 6px;
-    text-align: left;
-    font-size: 0.58rem;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--text-3);
-    border-bottom: 1px solid var(--border);
-    white-space: nowrap;
-  }
-  .rounds-table thead th:nth-child(3),
-  .rounds-table thead th:nth-child(5) { text-align: right; }
-  .rounds-table tbody td {
-    padding: 7px 6px;
-    border-bottom: 1px solid rgba(255,255,255,0.02);
-    white-space: nowrap;
-  }
-  .rounds-table tbody tr:last-child td { border-bottom: none; }
-  .rounds-table tbody tr {
-    transition: background 0.15s;
-  }
-  .rounds-table tbody tr:hover {
-    background: rgba(255,255,255,0.02);
-  }
-  .coef-orange { color: var(--orange); font-weight: 600; }
-  .coef-blue { color: var(--blue); font-weight: 600; }
-  .coef-high { color: var(--amber); font-weight: 700; }
-  .winner-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 2px 8px;
-    border-radius: 6px;
-    font-size: 0.6rem;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-  }
-  .winner-badge.orange {
-    background: var(--orange-dim);
-    color: var(--orange);
-  }
-  .winner-badge.blue {
-    background: var(--blue-dim);
-    color: var(--blue);
-  }
-  .winner-badge .dot {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-  }
-  .winner-badge.orange .dot { background: var(--orange); }
-  .winner-badge.blue .dot { background: var(--blue); }
-
-  /* DONUT CHART */
-  .chart-container {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-  }
-  .donut-wrap {
-    position: relative;
-    width: 120px;
-    height: 120px;
-    flex-shrink: 0;
-  }
-  .donut-wrap canvas {
-    width: 120px;
-    height: 120px;
-  }
-  .donut-center {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-  }
-  .donut-center-value {
-    font-size: 1.1rem;
-    font-weight: 800;
-    color: var(--text-1);
-    line-height: 1;
-  }
-  .donut-center-label {
-    font-size: 0.5rem;
-    font-weight: 600;
-    color: var(--text-3);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    margin-top: 2px;
-  }
-  .chart-legend {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    flex: 1;
-  }
-  .legend-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .legend-color {
-    width: 10px;
-    height: 10px;
-    border-radius: 3px;
-    flex-shrink: 0;
-  }
-  .legend-text {
-    font-size: 0.7rem;
-    color: var(--text-2);
-    flex: 1;
-  }
-  .legend-value {
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: var(--text-1);
-  }
-
-  /* STREAK ANALYSIS */
-  .streak-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-  }
-  .streak-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 14px 10px;
-    text-align: center;
-  }
-  .streak-value {
-    font-size: 1.5rem;
-    font-weight: 900;
-    line-height: 1;
-  }
-  .streak-value.orange { color: var(--orange); }
-  .streak-value.blue { color: var(--blue); }
-  .streak-value.mixed { color: var(--text-1); }
-  .streak-label {
-    font-size: 0.55rem;
-    font-weight: 600;
-    color: var(--text-3);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin-top: 6px;
-    line-height: 1.3;
-  }
-  .streak-sub {
-    font-size: 0.5rem;
-    color: var(--text-3);
-    margin-top: 2px;
-  }
-
-  /* Footer */
-  .footer {
-    text-align: center;
-    padding: 20px 0;
-    font-size: 0.55rem;
-    color: var(--text-3);
-    letter-spacing: 0.05em;
-  }
-
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 4px; height: 4px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 100px; }
-
-  /* Responsive tweaks */
-  @media (max-width: 360px) {
-    .header-title { font-size: 1.4rem; }
-    .stat-value { font-size: 1.1rem; }
-    .signal-btn { padding: 12px 24px; font-size: 0.8rem; }
-  }
+/* Coef bar in table */
+.coef-bar{height:4px;border-radius:2px;margin-top:2px}
+.coef-bar.orange-bar{background:var(--orange)}
+.coef-bar.blue-bar{background:var(--blue)}
 </style>
 </head>
 <body>
-
 <div class="app" id="app">
-
-  <!-- HEADER -->
-  <div class="section header">
-    <div class="header-title">SPEED N CASH</div>
-    <div class="header-badge">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-      PREDICTOR
+  <!-- Header -->
+  <div class="header">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="logo">SPEED N CASH</span>
+      <span class="badge">PREDICTOR</span>
     </div>
-    <div class="vehicles-row">
-      <div class="vehicle-icon">
-        <span>🏎️</span>
-        <span class="vehicle-label orange">Orange</span>
-      </div>
-      <span class="vs-badge">VS</span>
-      <div class="vehicle-icon">
-        <span>🏎️</span>
-        <span class="vehicle-label blue">Blue</span>
-      </div>
+    <div class="status-bar" id="statusBar">
+      <div class="status-dot"></div>
+      <span id="statusText">Connexion...</span>
     </div>
   </div>
 
-  <!-- STATS BAR -->
-  <div class="section">
-    <div class="stats-grid">
+  <!-- Vehicles -->
+  <div class="vehicles">
+    <div class="vehicle-icon orange">
+      <div class="dot">O</div>
+      <span style="color:var(--orange)">Orange</span>
+    </div>
+    <div class="vs">VS</div>
+    <div class="vehicle-icon blue">
+      <div class="dot">B</div>
+      <span style="color:var(--blue)">Bleu</span>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div id="loadingState" class="loading">
+    <div class="spinner"></div>
+    <div class="loading-text">Connexion au jeu en cours...</div>
+  </div>
+
+  <!-- Main Content (hidden until data loads) -->
+  <div id="mainContent" style="display:none">
+
+    <!-- Stats -->
+    <div class="stats">
       <div class="stat-card">
-        <div class="stat-value white" id="stat-total">0</div>
-        <div class="stat-label">Rounds</div>
+        <div class="stat-val" id="totalRounds">0</div>
+        <div class="stat-label">Tours</div>
       </div>
       <div class="stat-card">
-        <div class="stat-value orange" id="stat-orange">0%</div>
-        <div class="stat-label">Orange Win</div>
+        <div class="stat-val orange" id="orangeRate">0%</div>
+        <div class="stat-label">Orange</div>
       </div>
       <div class="stat-card">
-        <div class="stat-value blue" id="stat-blue">0%</div>
-        <div class="stat-label">Blue Win</div>
+        <div class="stat-val blue" id="blueRate">0%</div>
+        <div class="stat-label">Bleu</div>
       </div>
     </div>
-  </div>
 
-  <!-- RACE TRACK VISUALIZATION -->
-  <div class="section">
-    <div class="section-title">Race Track &mdash; Last 15 Rounds</div>
-    <div class="card">
-      <div class="race-track" id="race-track"></div>
-    </div>
-  </div>
-
-  <!-- PREDICTION / SIGNAL -->
-  <div class="section">
-    <div class="signal-card">
-      <div class="signal-title">Obtenir un Signal</div>
-      <button class="signal-btn" id="signal-btn" onclick="generateSignal()">
-        <span class="spinner"></span>
-        <span class="btn-text">Obtenir le Signal</span>
-        <span class="btn-loading-text">Analyse en cours...</span>
-      </button>
-      <div class="signal-result" id="signal-result">
-        <div class="signal-prediction">
-          <span class="signal-vehicle-icon" id="signal-icon">🏎️</span>
-          <div>
-            <div class="signal-vehicle-name" id="signal-name">---</div>
-            <div style="font-size:0.6rem;color:var(--text-3);margin-top:2px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;" id="signal-sub">Prediction</div>
-          </div>
-        </div>
-        <div class="signal-confidence">
-          <div class="confidence-label">
-            <span class="confidence-text">Confiance</span>
-            <span class="confidence-value" id="confidence-value">0%</span>
-          </div>
-          <div class="confidence-bar-bg">
-            <div class="confidence-bar-fill" id="confidence-bar" style="width:0%"></div>
-          </div>
-        </div>
-        <div class="signal-factors" id="signal-factors"></div>
+    <!-- Prediction -->
+    <div class="prediction-card pred-waiting" id="predCard">
+      <div class="pred-title">PROCHAINE PREDICTION</div>
+      <div id="predContent">
+        <div class="pred-waiting-text">En attente de donnees...</div>
       </div>
     </div>
-  </div>
 
-  <!-- CATEGORY DISTRIBUTION -->
-  <div class="section">
-    <div class="section-title">Coefficient Distribution</div>
-    <div class="card">
-      <div class="chart-container">
-        <div class="donut-wrap">
-          <canvas id="donut-chart" width="240" height="240"></canvas>
-          <div class="donut-center">
-            <div class="donut-center-value" id="donut-total">0</div>
-            <div class="donut-center-label">Rounds</div>
-          </div>
-        </div>
-        <div class="chart-legend" id="chart-legend"></div>
-      </div>
+    <!-- Coefficient Chart -->
+    <div class="section-title">Courbe des cotes</div>
+    <div class="chart-container">
+      <canvas class="chart-canvas" id="coefChart"></canvas>
     </div>
-  </div>
 
-  <!-- STREAK ANALYSIS -->
-  <div class="section">
-    <div class="section-title">Streak Analysis</div>
-    <div class="streak-grid">
+    <!-- Race Track -->
+    <div class="section-title">Derniers tours</div>
+    <div class="race-track" id="raceTrack"></div>
+
+    <!-- Streak -->
+    <div class="section-title">Series</div>
+    <div class="streak-row">
       <div class="streak-card">
-        <div class="streak-value mixed" id="streak-current">0</div>
-        <div class="streak-label" id="streak-current-label">Current</div>
-        <div class="streak-sub" id="streak-current-sub">&nbsp;</div>
+        <div class="val" id="currentStreak">-</div>
+        <div class="lbl">Serie en cours</div>
       </div>
-      <div class="streak-card">
-        <div class="streak-value orange" id="streak-orange-max">0</div>
-        <div class="streak-label">Longest Orange</div>
-        <div class="streak-sub">Streak</div>
+      <div class="streak-card orange">
+        <div class="val" id="maxOrange">0</div>
+        <div class="lbl">Max Orange</div>
       </div>
-      <div class="streak-card">
-        <div class="streak-value blue" id="streak-blue-max">0</div>
-        <div class="streak-label">Longest Blue</div>
-        <div class="streak-sub">Streak</div>
+      <div class="streak-card blue">
+        <div class="val" id="maxBlue">0</div>
+        <div class="lbl">Max Bleu</div>
       </div>
     </div>
-  </div>
 
-  <!-- LAST ROUNDS TABLE -->
-  <div class="section">
-    <div class="section-title">Last 20 Rounds</div>
-    <div class="card" style="padding:8px 4px;">
-      <div class="table-wrapper">
-        <table class="rounds-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Orange</th>
-              <th>Blue</th>
-              <th>Winner</th>
-              <th>Top Coef</th>
-            </tr>
-          </thead>
-          <tbody id="rounds-tbody"></tbody>
-        </table>
+    <!-- Average Coefs -->
+    <div class="section-title">Moyennes</div>
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-val orange" id="avgOrange">0x</div>
+        <div class="stat-label">Orange moy.</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val blue" id="avgBlue">0x</div>
+        <div class="stat-label">Bleu moy.</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="avgTop" style="color:#fbbf24">0x</div>
+        <div class="stat-label">Top moy.</div>
       </div>
     </div>
-  </div>
 
-  <div class="footer">SpeedNCash Predictor &bull; For entertainment purposes only</div>
+    <!-- Table -->
+    <div class="section-title">Historique</div>
+    <div class="table-container">
+      <div class="table-row header">
+        <div class="num">#</div>
+        <div style="text-align:center">Orange</div>
+        <div style="text-align:center">Bleu</div>
+        <div class="winner">Gagnant</div>
+        <div class="top">Top</div>
+      </div>
+      <div id="historyTable"></div>
+    </div>
+  </div>
 </div>
 
 <script>
-// ===================== DATA =====================
-const SEED_DATA = [
-  {"id":"82960b76","finalValues":[9.0,1.24],"topCoefficient":9.0,"outcome":0},
-  {"id":"82de0f24","finalValues":[5.68,1.3],"topCoefficient":5.68,"outcome":0},
-  {"id":"19c18b29","finalValues":[5.13,2.57],"topCoefficient":5.13,"outcome":0},
-  {"id":"0b3b3211","finalValues":[1.8,49.23],"topCoefficient":49.23,"outcome":1},
-  {"id":"d0ca9571","finalValues":[2.81,5.38],"topCoefficient":5.38,"outcome":1},
-  {"id":"r6","finalValues":[1.8,1.22],"topCoefficient":1.8,"outcome":0},
-  {"id":"r7","finalValues":[1.0,1.64],"topCoefficient":1.64,"outcome":1},
-  {"id":"r8","finalValues":[2.2,2.54],"topCoefficient":2.54,"outcome":1},
-  {"id":"r9","finalValues":[1.4,1.39],"topCoefficient":1.4,"outcome":0},
-  {"id":"r10","finalValues":[5.94,9.0],"topCoefficient":9.0,"outcome":1},
-  {"id":"r11","finalValues":[2.21,4.77],"topCoefficient":4.77,"outcome":1},
-  {"id":"r12","finalValues":[1.0,10.66],"topCoefficient":10.66,"outcome":1},
-  {"id":"r13","finalValues":[13.65,1.6],"topCoefficient":13.65,"outcome":0},
-  {"id":"r14","finalValues":[2.23,2.44],"topCoefficient":2.44,"outcome":1},
-  {"id":"r15","finalValues":[1.0,1.39],"topCoefficient":1.39,"outcome":1},
-  {"id":"r16","finalValues":[1.4,2.19],"topCoefficient":2.19,"outcome":1},
-  {"id":"r17","finalValues":[1.33,1.88],"topCoefficient":1.88,"outcome":1},
-  {"id":"r18","finalValues":[1.2,2.77],"topCoefficient":2.77,"outcome":1},
-  {"id":"r19","finalValues":[16.42,4.91],"topCoefficient":16.42,"outcome":0},
-  {"id":"r20","finalValues":[1.05,5.96],"topCoefficient":5.96,"outcome":1}
-];
+const API = 'https://crash-gateway-grm-cr.gamedev-tech.cc';
+const AUTH_TOKEN = '123172b4cf2f707068d139197b939e2224651486931db746f0a87dcfa43bd4f90e06fcf18a2351a3ffe95e357c4d4a0ff21b5c90b3f555736762d31bf53c54a51b4ab4e172331f10ce5e4ed13a34d39d4a23e77ac2d5817e26ca8dbba965b1c25d28e3f41a826cb0fad7bc61e3f7c2eaa3c089ce3318c3aa69ecf31dec6ee2d0a8920e45571cd564625b2a5c887936a0778dd2c775f07901f9a9fb1361044f999e6c7362777f171cecd4525baf7746dd9c1c44e504f8287cc9.3c1681ff25e14d35a8c75f5a0ac665a9.077dee8d-c923-4c02-9bee-757573662e69';
+const CUSTOMER_ID = '077dee8d-c923-4c02-9bee-757573662e69';
+let sessionId = null;
+let allRounds = [];
+let lastRoundId = null;
+let pollInterval = null;
+const MAX_ROUNDS = 200;
 
-// Seeded PRNG (mulberry32) for reproducible data
-function mulberry32(a) {
-  return function() {
-    a |= 0; a = a + 0x6D2B79F5 | 0;
-    var t = Math.imul(a ^ a >>> 15, 1 | a);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
+async function auth() {
+  const r = await fetch(API + '/user/auth', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Auth-Token': AUTH_TOKEN }
+  });
+  if (!r.ok) throw new Error('Auth failed');
+  const d = await r.json();
+  sessionId = d.sessionId;
 }
 
-const rand = mulberry32(42);
+async function fetchHistory() {
+  if (!sessionId) return [];
+  const r = await fetch(API + '/history', {
+    headers: { 'accept': 'application/json', 'Session-Id': sessionId, 'Customer-Id': CUSTOMER_ID }
+  });
+  if (!r.ok) return [];
+  return await r.json();
+}
 
-function generateRound(id) {
-  const r = rand;
-  // Generate realistic crash coefficients
-  // Loser tends to crash low (1.0 - 3.5), winner can go high
-  const loserBase = 1.0 + r() * 2.5;
-  const loser = Math.round(loserBase * 100) / 100;
-  
-  // Winner has a wider range, weighted toward lower values but can spike
-  let winner;
-  const roll = r();
-  if (roll < 0.35) {
-    // Low winner (1.0 - 2.5) - both crash low
-    winner = 1.0 + r() * 1.5;
-  } else if (roll < 0.65) {
-    // Medium winner (2.5 - 6.0)
-    winner = 2.5 + r() * 3.5;
-  } else if (roll < 0.85) {
-    // High winner (6.0 - 15.0)
-    winner = 6.0 + r() * 9.0;
-  } else if (roll < 0.95) {
-    // Very high (15.0 - 30.0)
-    winner = 15.0 + r() * 15.0;
-  } else {
-    // Extreme (30.0 - 70.0)
-    winner = 30.0 + r() * 40.0;
+function mergeRounds(newRounds) {
+  const existing = new Set(allRounds.map(r => r.id));
+  let added = 0;
+  for (const r of newRounds) {
+    if (!existing.has(r.id)) {
+      allRounds.unshift(r);
+      existing.add(r.id);
+      added++;
+    }
   }
-  winner = Math.round(winner * 100) / 100;
-  
-  const outcome = r() < 0.44 ? 0 : 1; // ~44% orange, ~56% blue (matching seed pattern)
-  const orangeVal = outcome === 0 ? winner : loser;
-  const blueVal = outcome === 1 ? winner : loser;
-  
-  return {
-    id: id,
-    finalValues: [orangeVal, blueVal],
-    topCoefficient: Math.max(orangeVal, blueVal),
-    outcome: outcome
-  };
+  // Sort by position in API response (newest first = index 0)
+  allRounds.sort((a, b) => {
+    const ia = newRounds.findIndex(r => r.id === a.id);
+    const ib = newRounds.findIndex(r => r.id === b.id);
+    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+  });
+  if (allRounds.length > MAX_ROUNDS) allRounds = allRounds.slice(0, MAX_ROUNDS);
+  return added;
 }
 
-// Generate 80 additional rounds
-const GENERATED_DATA = [];
-for (let i = 21; i <= 100; i++) {
-  GENERATED_DATA.push(generateRound('g' + i));
+// ===== PREDICTION ENGINE =====
+function predict() {
+  if (allRounds.length < 5) return null;
+  const last = allRounds[0];
+  const recent = allRounds.slice(0, Math.min(20, allRounds.length));
+
+  let orangeScore = 50;
+  let blueScore = 50;
+  const reasons = [];
+
+  // 1. Win rate in last 10
+  const last10 = recent.slice(0, Math.min(10, recent.length));
+  const oWins = last10.filter(r => r.outcome === 0).length;
+  const bWins = last10.length - oWins;
+  if (oWins >= 7) { orangeScore += 15; reasons.push('Orange domine les 10 derniers tours'); }
+  else if (bWins >= 7) { blueScore += 15; reasons.push('Bleu domine les 10 derniers tours'); }
+
+  // 2. Current streak
+  let streak = 1;
+  let streakSide = last.outcome;
+  for (let i = 1; i < recent.length; i++) {
+    if (recent[i].outcome === streakSide) streak++;
+    else break;
+  }
+  if (streak >= 4) {
+    // Long streak reversal
+    if (streakSide === 0) { blueScore += 20; reasons.push('Serie Orange de ' + streak + ' — inversion probable'); }
+    else { orangeScore += 20; reasons.push('Serie Bleu de ' + streak + ' — inversion probable'); }
+  } else if (streak === 3) {
+    if (streakSide === 0) { blueScore += 10; reasons.push('Serie Orange de 3 — possible inversion'); }
+    else { orangeScore += 10; reasons.push('Serie Bleu de 3 — possible inversion'); }
+  }
+
+  // 3. Alternation pattern
+  let altCount = 0;
+  for (let i = 0; i < Math.min(6, recent.length - 1); i++) {
+    if (recent[i].outcome !== recent[i + 1].outcome) altCount++;
+  }
+  const altRate = altCount / Math.min(5, recent.length - 1);
+  if (altRate >= 0.8) {
+    // Strong alternation — bet against last winner
+    if (last.outcome === 0) { blueScore += 12; reasons.push('Fort alternation detectee'); }
+    else { orangeScore += 12; reasons.push('Fort alternation detectee'); }
+  }
+
+  // 4. Coefficient heat — which vehicle tends to get higher coefs
+  const oCoefs = recent.map(r => r.finalValues[0]);
+  const bCoefs = recent.map(r => r.finalValues[1]);
+  const avgO = oCoefs.reduce((a, b) => a + b, 0) / oCoefs.length;
+  const avgB = bCoefs.reduce((a, b) => a + b, 0) / bCoefs.length;
+  if (avgO > avgB * 1.3) { orangeScore += 8; reasons.push('Orange en forme (moy. ' + avgO.toFixed(1) + 'x)'); }
+  else if (avgB > avgO * 1.3) { blueScore += 8; reasons.push('Bleu en forme (moy. ' + avgB.toFixed(1) + 'x)'); }
+
+  // 5. Last round loser revenge
+  const loser = last.outcome === 0 ? 1 : 0;
+  const last3Losers = recent.slice(0, 3).filter(r => r.outcome !== loser).length;
+  if (last3Losers >= 2) {
+    if (loser === 0) { orangeScore += 5; reasons.push('Orange perdant 2/3 — revenge possible'); }
+    else { blueScore += 5; reasons.push('Bleu perdant 2/3 — revenge possible'); }
+  }
+
+  const total = orangeScore + blueScore;
+  const orangePct = Math.round((orangeScore / total) * 100);
+  const bluePct = 100 - orangePct;
+  const predicted = orangePct > bluePct ? 0 : 1;
+  const confidence = Math.max(orangePct, bluePct);
+
+  return { predicted, confidence, reasons, orangePct, bluePct };
 }
 
-const ALL_DATA = [...SEED_DATA, ...GENERATED_DATA];
-const TOTAL = ALL_DATA.length;
+// ===== RENDERING =====
+function render() {
+  if (allRounds.length === 0) return;
 
-// ===================== STATS =====================
-function computeStats() {
-  const orangeWins = ALL_DATA.filter(r => r.outcome === 0).length;
-  const blueWins = TOTAL - orangeWins;
-  return { orangeWins, blueWins, total: TOTAL };
-}
+  document.getElementById('loadingState').style.display = 'none';
+  document.getElementById('mainContent').style.display = 'block';
 
-function updateStats() {
-  const { orangeWins, blueWins, total } = computeStats();
-  document.getElementById('stat-total').textContent = total;
-  document.getElementById('stat-orange').textContent = ((orangeWins / total) * 100).toFixed(1) + '%';
-  document.getElementById('stat-blue').textContent = ((blueWins / total) * 100).toFixed(1) + '%';
-}
+  const n = allRounds.length;
+  const oWins = allRounds.filter(r => r.outcome === 0).length;
 
-// ===================== RACE TRACK =====================
-function renderRaceTrack() {
-  const container = document.getElementById('race-track');
-  const last15 = ALL_DATA.slice(-15);
-  const maxCoef = Math.max(...last15.map(r => r.topCoefficient));
-  
-  container.innerHTML = '';
-  last15.forEach((round, i) => {
-    const orangeCoef = round.finalValues[0];
-    const blueCoef = round.finalValues[1];
-    const orangePct = (orangeCoef / maxCoef) * 48; // max 48% width
-    const bluePct = (blueCoef / maxCoef) * 48;
-    const orangeWin = round.outcome === 0;
-    const blueWin = round.outcome === 1;
-    const roundNum = TOTAL - 15 + i + 1;
-    
-    const row = document.createElement('div');
-    row.className = 'race-row';
-    row.innerHTML = `
-      <span class="race-label">${roundNum}</span>
-      <div class="race-bars">
-        <div class="race-bar orange-bar ${orangeWin ? 'winner' : 'loser'}" 
-             style="width:${Math.max(orangePct, 3)}%;animation-delay:${i * 0.04}s">
-          ${orangeWin ? '<span class="race-coef">' + orangeCoef.toFixed(2) + 'x</span>' : ''}
+  // Stats
+  document.getElementById('totalRounds').textContent = n;
+  document.getElementById('orangeRate').textContent = Math.round((oWins / n) * 100) + '%';
+  document.getElementById('blueRate').textContent = Math.round(((n - oWins) / n) * 100) + '%';
+
+  // Averages
+  const avgO = (allRounds.reduce((s, r) => s + r.finalValues[0], 0) / n).toFixed(2);
+  const avgB = (allRounds.reduce((s, r) => s + r.finalValues[1], 0) / n).toFixed(2);
+  const avgT = (allRounds.reduce((s, r) => s + r.topCoefficient, 0) / n).toFixed(2);
+  document.getElementById('avgOrange').textContent = avgO + 'x';
+  document.getElementById('avgBlue').textContent = avgB + 'x';
+  document.getElementById('avgTop').textContent = avgT + 'x';
+
+  // Streaks
+  let curStreak = 1, curSide = allRounds[0].outcome;
+  for (let i = 1; i < allRounds.length; i++) {
+    if (allRounds[i].outcome === curSide) curStreak++;
+    else break;
+  }
+  const streakEl = document.getElementById('currentStreak');
+  streakEl.textContent = curStreak;
+  streakEl.style.color = curSide === 0 ? 'var(--orange)' : 'var(--blue)';
+
+  let maxO = 0, maxB = 0, tmp = 1;
+  for (let i = 1; i < allRounds.length; i++) {
+    if (allRounds[i].outcome === allRounds[i - 1].outcome) { tmp++; }
+    else {
+      if (allRounds[i - 1].outcome === 0) maxO = Math.max(maxO, tmp);
+      else maxB = Math.max(maxB, tmp);
+      tmp = 1;
+    }
+  }
+  if (allRounds[allRounds.length - 1].outcome === 0) maxO = Math.max(maxO, tmp);
+  else maxB = Math.max(maxB, tmp);
+  document.getElementById('maxOrange').textContent = maxO;
+  document.getElementById('maxBlue').textContent = maxB;
+
+  // Prediction
+  const pred = predict();
+  const predCard = document.getElementById('predCard');
+  const predContent = document.getElementById('predContent');
+  if (pred) {
+    const isO = pred.predicted === 0;
+    predCard.className = 'prediction-card ' + (isO ? 'pred-orange' : 'pred-blue');
+    predContent.innerHTML = `
+      <div class="pred-result">
+        <div class="pred-vehicle ${isO ? 'orange' : 'blue'}">
+          <div class="icon">${isO ? 'O' : 'B'}</div>
+          <div class="name">${isO ? 'ORANGE' : 'BLEU'}</div>
         </div>
-        <div class="race-bar blue-bar ${blueWin ? 'winner' : 'loser'}" 
-             style="width:${Math.max(bluePct, 3)}%;animation-delay:${i * 0.04 + 0.02}s">
-          ${blueWin ? '<span class="race-coef">' + blueCoef.toFixed(2) + 'x</span>' : ''}
+        <div class="pred-confidence">
+          <div class="val" style="color:${isO ? 'var(--orange)' : 'var(--blue)'}">${pred.confidence}%</div>
+          <div class="lbl">Confiance</div>
         </div>
       </div>
-    `;
-    container.appendChild(row);
-  });
-}
-
-// ===================== DONUT CHART =====================
-function drawDonut() {
-  const canvas = document.getElementById('donut-chart');
-  const ctx = canvas.getContext('2d');
-  const dpr = window.devicePixelRatio || 1;
-  canvas.width = 240 * dpr;
-  canvas.height = 240 * dpr;
-  ctx.scale(dpr, dpr);
-  
-  const categories = { blue: 0, purple: 0, orange: 0 };
-  ALL_DATA.forEach(r => {
-    const tc = r.topCoefficient;
-    if (tc < 2) categories.blue++;
-    else if (tc < 10) categories.purple++;
-    else categories.orange++;
-  });
-  
-  const total = categories.blue + categories.purple + categories.orange;
-  document.getElementById('donut-total').textContent = total;
-  
-  const slices = [
-    { label: 'Low (<2x)', value: categories.blue, color: '#3b82f6', dimColor: 'rgba(59,130,246,0.15)' },
-    { label: 'Mid (2-10x)', value: categories.purple, color: '#a855f7', dimColor: 'rgba(168,85,247,0.15)' },
-    { label: 'High (10x+)', value: categories.orange, color: '#f97316', dimColor: 'rgba(249,115,22,0.15)' }
-  ];
-  
-  // Legend
-  const legendEl = document.getElementById('chart-legend');
-  legendEl.innerHTML = slices.map(s => `
-    <div class="legend-item">
-      <div class="legend-color" style="background:${s.color}"></div>
-      <span class="legend-text">${s.label}</span>
-      <span class="legend-value">${s.value} <span style="color:var(--text-3);font-weight:400;font-size:0.6rem">${((s.value/total)*100).toFixed(0)}%</span></span>
-    </div>
-  `).join('');
-  
-  // Draw
-  const cx = 120, cy = 120, outerR = 52, innerR = 36;
-  let startAngle = -Math.PI / 2;
-  
-  slices.forEach((slice, idx) => {
-    if (slice.value === 0) return;
-    const sweep = (slice.value / total) * Math.PI * 2;
-    const endAngle = startAngle + sweep;
-    
-    ctx.beginPath();
-    ctx.arc(cx, cy, outerR, startAngle, endAngle);
-    ctx.arc(cx, cy, innerR, endAngle, startAngle, true);
-    ctx.closePath();
-    ctx.fillStyle = slice.color;
-    ctx.fill();
-    
-    // Tiny gap
-    if (idx < slices.length - 1) {
-      ctx.beginPath();
-      ctx.moveTo(cx + Math.cos(endAngle) * innerR, cy + Math.sin(endAngle) * innerR);
-      ctx.lineTo(cx + Math.cos(endAngle) * outerR, cy + Math.sin(endAngle) * outerR);
-      ctx.strokeStyle = '#050510';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    }
-    
-    startAngle = endAngle;
-  });
-}
-
-// ===================== STREAK ANALYSIS =====================
-function computeStreaks() {
-  let currentStreak = 1;
-  let currentType = ALL_DATA[TOTAL - 1].outcome;
-  let maxOrangeStreak = 0;
-  let maxBlueStreak = 0;
-  let tempStreak = 1;
-  
-  for (let i = 1; i < TOTAL; i++) {
-    if (ALL_DATA[i].outcome === ALL_DATA[i-1].outcome) {
-      tempStreak++;
-    } else {
-      if (ALL_DATA[i-1].outcome === 0) {
-        maxOrangeStreak = Math.max(maxOrangeStreak, tempStreak);
-      } else {
-        maxBlueStreak = Math.max(maxBlueStreak, tempStreak);
-      }
-      tempStreak = 1;
-    }
+      <div style="margin-top:8px;height:4px;border-radius:2px;background:var(--border);overflow:hidden">
+        <div style="height:100%;width:${pred.confidence}%;background:${isO ? 'var(--orange)' : 'var(--blue)'};border-radius:2px;transition:width .6s ease"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:.5rem;color:var(--text3)">
+        <span>Orange ${pred.orangePct}%</span>
+        <span>Bleu ${pred.bluePct}%</span>
+      </div>
+      <div class="pred-reasons">
+        ${pred.reasons.map(r => '<div class="pred-reason"><div class="dot"></div>' + r + '</div>').join('')}
+      </div>`;
   }
-  // Final streak
-  if (ALL_DATA[TOTAL-1].outcome === 0) {
-    maxOrangeStreak = Math.max(maxOrangeStreak, tempStreak);
-  } else {
-    maxBlueStreak = Math.max(maxBlueStreak, tempStreak);
-  }
-  
-  // Current streak (from end)
-  for (let i = TOTAL - 2; i >= 0; i--) {
-    if (ALL_DATA[i].outcome === currentType) {
-      currentStreak++;
-    } else {
-      break;
-    }
-  }
-  
-  return { currentStreak, currentType, maxOrangeStreak, maxBlueStreak };
-}
 
-function updateStreaks() {
-  const { currentStreak, currentType, maxOrangeStreak, maxBlueStreak } = computeStreaks();
-  document.getElementById('streak-current').textContent = currentStreak;
-  document.getElementById('streak-current').className = 'streak-value ' + (currentType === 0 ? 'orange' : 'blue');
-  document.getElementById('streak-current-label').textContent = currentType === 0 ? 'Current' : 'Current';
-  document.getElementById('streak-current-sub').textContent = currentType === 0 ? 'Orange 🔥' : 'Blue 🔥';
-  document.getElementById('streak-orange-max').textContent = maxOrangeStreak;
-  document.getElementById('streak-blue-max').textContent = maxBlueStreak;
-}
+  // Race Track (last 12)
+  const track = document.getElementById('raceTrack');
+  const trackRounds = allRounds.slice(0, 12);
+  track.innerHTML = trackRounds.map((r, i) => {
+    const a = r.finalValues[0], b = r.finalValues[1];
+    const top = r.topCoefficient;
+    const total = a + b;
+    const oPct = (a / total * 100).toFixed(1);
+    const bPct = (b / total * 100).toFixed(1);
+    const isO = r.outcome === 0;
+    return `<div class="race-row ${isO ? 'orange-won' : 'blue-won'} ${i === 0 ? 'new-round' : ''}">
+      <div class="lane-orange" style="width:${oPct}%"></div>
+      <div class="lane-blue" style="width:${bPct}%"></div>
+      <span class="coef-label coef-orange" style="right:${bPct}%">${a.toFixed(1)}x</span>
+      <span class="coef-label coef-blue" style="left:${oPct}%">${b.toFixed(1)}x</span>
+      <span class="winner-label">${top.toFixed(1)}x</span>
+    </div>`;
+  }).join('');
 
-// ===================== TABLE =====================
-function renderTable() {
-  const tbody = document.getElementById('rounds-tbody');
-  const last20 = ALL_DATA.slice(-20);
-  
-  tbody.innerHTML = last20.map((round, i) => {
-    const num = TOTAL - 20 + i + 1;
-    const orangeCoef = round.finalValues[0];
-    const blueCoef = round.finalValues[1];
-    const isOrange = round.outcome === 0;
-    const topCoef = round.topCoefficient;
-    const highCoef = topCoef >= 10;
-    
-    return `<tr>
-      <td style="color:var(--text-3);font-weight:600">${num}</td>
-      <td class="coef-orange">${orangeCoef.toFixed(2)}x</td>
-      <td class="coef-blue" style="text-align:right">${blueCoef.toFixed(2)}x</td>
-      <td>
-        <span class="winner-badge ${isOrange ? 'orange' : 'blue'}">
-          <span class="dot"></span>
-          ${isOrange ? 'ORANGE' : 'BLUE'}
-        </span>
-      </td>
-      <td class="${highCoef ? 'coef-high' : ''}" style="text-align:right;font-weight:700">${topCoef.toFixed(2)}x</td>
-    </tr>`;
+  // Chart
+  drawChart();
+
+  // Table (last 30)
+  const table = document.getElementById('historyTable');
+  const tableRounds = allRounds.slice(0, 30);
+  table.innerHTML = tableRounds.map((r, i) => {
+    const a = r.finalValues[0], b = r.finalValues[1];
+    const isO = r.outcome === 0;
+    return `<div class="table-row ${i === 0 ? 'new-round' : ''}">
+      <div class="num">${n - i}</div>
+      <div class="coef-o">${a.toFixed(2)}x</div>
+      <div class="coef-b">${b.toFixed(2)}x</div>
+      <div class="winner"><span class="${isO ? 'w-o' : 'w-b'}">${isO ? 'ORANGE' : 'BLEU'}</span></div>
+      <div class="top">${r.topCoefficient.toFixed(2)}x</div>
+    </div>`;
   }).join('');
 }
 
-// ===================== PREDICTION / SIGNAL =====================
-function analyzePatterns() {
-  const last10 = ALL_DATA.slice(-10);
-  const last5 = ALL_DATA.slice(-5);
-  const last20 = ALL_DATA.slice(-20);
-  
-  // Factor 1: Recent win rate (last 10)
-  const orangeWins10 = last10.filter(r => r.outcome === 0).length;
-  const blueWins10 = 10 - orangeWins10;
-  const orangeRate10 = orangeWins10 / 10;
-  const blueRate10 = blueWins10 / 10;
-  const domination = Math.max(orangeRate10, blueRate10);
-  const dominatedVehicle = orangeRate10 > blueRate10 ? 0 : 1;
-  
-  // Factor 2: Alternating vs Streak pattern (last 10)
-  let alternations = 0;
-  for (let i = 1; i < last10.length; i++) {
-    if (last10[i].outcome !== last10[i-1].outcome) alternations++;
+// ===== CHART =====
+function drawChart() {
+  const canvas = document.getElementById('coefChart');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = rect.height;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const rounds = allRounds.slice(0, 40).reverse();
+  if (rounds.length < 2) return;
+
+  const pad = { t: 10, r: 10, b: 20, l: 36 };
+  const cw = W - pad.l - pad.r;
+  const ch = H - pad.t - pad.b;
+
+  // Find max coef for scale
+  let maxCoef = 1;
+  for (const r of rounds) {
+    maxCoef = Math.max(maxCoef, r.finalValues[0], r.finalValues[1]);
   }
-  const altRate = alternations / (last10.length - 1);
-  const isAlternating = altRate > 0.65;
-  const isStreaky = altRate < 0.35;
-  
-  // Factor 3: Average coefficients (last 10)
-  const avgOrangeCoef = last10.reduce((s, r) => s + r.finalValues[0], 0) / 10;
-  const avgBlueCoef = last10.reduce((s, r) => s + r.finalValues[1], 0) / 10;
-  const orangeHot = avgOrangeCoef > avgBlueCoef * 1.2;
-  const blueHot = avgBlueCoef > avgOrangeCoef * 1.2;
-  
-  // Factor 4: Current streak momentum
-  const { currentStreak, currentType } = computeStreaks();
-  
-  // Factor 5: Recency (last 3)
-  const last3 = ALL_DATA.slice(-3);
-  const last3Orange = last3.filter(r => r.outcome === 0).length;
-  const last3Blue = 3 - last3Orange;
-  
-  // ---- Build prediction ----
-  let orangeScore = 50;
-  let blueScore = 50;
-  let factors = [];
-  
-  // Domination factor
-  if (domination > 0.6) {
-    const pts = Math.round((domination - 0.5) * 40);
-    if (dominatedVehicle === 0) {
-      orangeScore += pts;
-      factors.push({ text: `Orange dominates last 10 rounds (${orangeWins10}/10)`, type: 'green' });
-    } else {
-      blueScore += pts;
-      factors.push({ text: `Blue dominates last 10 rounds (${blueWins10}/10)`, type: 'green' });
+  maxCoef = Math.ceil(maxCoef / 5) * 5 || 5;
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  ctx.font = '9px Inter, system-ui';
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  ctx.textAlign = 'right';
+  for (let v = 0; v <= maxCoef; v += Math.max(1, Math.floor(maxCoef / 5))) {
+    const y = pad.t + ch - (v / maxCoef) * ch;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+    ctx.fillText(v + 'x', pad.l - 4, y + 3);
+  }
+
+  // Draw lines
+  function drawLine(getVal, color, glowColor) {
+    // Glow
+    ctx.strokeStyle = glowColor;
+    ctx.lineWidth = 6;
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    for (let i = 0; i < rounds.length; i++) {
+      const x = pad.l + (i / (rounds.length - 1)) * cw;
+      const y = pad.t + ch - (Math.min(getVal(rounds[i]), maxCoef) / maxCoef) * ch;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     }
-  }
-  
-  // Alternation factor
-  if (isAlternating) {
-    const lastOutcome = ALL_DATA[TOTAL - 1].outcome;
-    if (lastOutcome === 0) {
-      blueScore += 12;
-      factors.push({ text: 'Alternating pattern detected — expect Blue next', type: 'amber' });
-    } else {
-      orangeScore += 12;
-      factors.push({ text: 'Alternating pattern detected — expect Orange next', type: 'amber' });
+    ctx.stroke();
+
+    // Line
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i < rounds.length; i++) {
+      const x = pad.l + (i / (rounds.length - 1)) * cw;
+      const y = pad.t + ch - (Math.min(getVal(rounds[i]), maxCoef) / maxCoef) * ch;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     }
-  } else if (isStreaky) {
-    const streakVehicle = currentType;
-    if (streakVehicle === 0) {
-      orangeScore += 8;
-      factors.push({ text: `Orange streak momentum (${currentStreak} in a row)`, type: 'green' });
-    } else {
-      blueScore += 8;
-      factors.push({ text: `Blue streak momentum (${currentStreak} in a row)`, type: 'green' });
-    }
+    ctx.stroke();
+
+    // Last point dot
+    const last = rounds[rounds.length - 1];
+    const lx = pad.l + cw;
+    const ly = pad.t + ch - (Math.min(getVal(last), maxCoef) / maxCoef) * ch;
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.arc(lx, ly, 3, 0, Math.PI * 2); ctx.fill();
   }
-  
-  // Hot coefficient factor
-  if (orangeHot) {
-    orangeScore += 10;
-    factors.push({ text: `Orange "hot" — avg coef ${avgOrangeCoef.toFixed(1)}x vs Blue ${avgBlueCoef.toFixed(1)}x`, type: 'green' });
-  } else if (blueHot) {
-    blueScore += 10;
-    factors.push({ text: `Blue "hot" — avg coef ${avgBlueCoef.toFixed(1)}x vs Orange ${avgOrangeCoef.toFixed(1)}x`, type: 'green' });
+
+  drawLine(r => r.finalValues[0], '#f97316', 'rgba(249,115,22,0.15)');
+  drawLine(r => r.finalValues[1], '#3b82f6', 'rgba(59,130,246,0.15)');
+
+  // X axis labels
+  ctx.fillStyle = 'rgba(255,255,255,0.2)';
+  ctx.textAlign = 'center';
+  ctx.font = '8px Inter, system-ui';
+  const step = Math.max(1, Math.floor(rounds.length / 6));
+  for (let i = 0; i < rounds.length; i += step) {
+    const x = pad.l + (i / (rounds.length - 1)) * cw;
+    ctx.fillText((allRounds.length - (rounds.length - 1 - i)).toString(), x, H - 4);
   }
-  
-  // Recency bias
-  if (last3Orange === 3) {
-    blueScore += 6;
-    factors.push({ text: 'Reversal signal: Orange won last 3, Blue may counter', type: 'amber' });
-  } else if (last3Blue === 3) {
-    orangeScore += 6;
-    factors.push({ text: 'Reversal signal: Blue won last 3, Orange may counter', type: 'amber' });
-  }
-  
-  // Long streak reversal
-  if (currentStreak >= 4) {
-    const otherVehicle = currentType === 0 ? 'blue' : 'orange';
-    const otherScore = currentType === 0 ? blueScore : orangeScore;
-    if (currentType === 0) blueScore += 8; else orangeScore += 8;
-    factors.push({ text: `Long streak (${currentStreak}) — reversal likely`, type: 'red' });
-  }
-  
-  const total = orangeScore + blueScore;
-  const orangeConf = Math.round((orangeScore / total) * 100);
-  const blueConf = 100 - orangeConf;
-  
-  const prediction = orangeConf > blueConf ? 0 : 1;
-  const confidence = Math.max(orangeConf, blueConf);
-  
-  // Clamp confidence to realistic range (55-82)
-  const adjustedConf = Math.min(82, Math.max(55, confidence));
-  
-  return { prediction, confidence: adjustedConf, factors, orangeScore, blueScore };
+
+  // Legend
+  ctx.font = 'bold 9px Inter, system-ui';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#f97316';
+  ctx.fillText('● Orange', pad.l, pad.t - 0);
+  ctx.fillStyle = '#3b82f6';
+  ctx.fillText('● Bleu', pad.l + 55, pad.t - 0);
 }
 
-function generateSignal() {
-  const btn = document.getElementById('signal-btn');
-  const result = document.getElementById('signal-result');
-  
-  if (btn.classList.contains('loading')) return;
-  
-  // Reset
-  result.classList.remove('visible');
-  btn.classList.add('loading');
-  
-  setTimeout(() => {
-    btn.classList.remove('loading');
-    
-    const analysis = analyzePatterns();
-    const isOrange = analysis.prediction === 0;
-    
-    document.getElementById('signal-icon').textContent = '🏎️';
-    document.getElementById('signal-name').textContent = isOrange ? 'ORANGE' : 'BLUE';
-    document.getElementById('signal-name').className = 'signal-vehicle-name ' + (isOrange ? 'orange' : 'blue');
-    document.getElementById('signal-sub').textContent = 'Recommended Bet';
-    
-    const confValue = document.getElementById('confidence-value');
-    const confBar = document.getElementById('confidence-bar');
-    const color = isOrange ? 'var(--orange)' : 'var(--blue)';
-    confValue.textContent = analysis.confidence + '%';
-    confValue.style.color = color;
-    confBar.style.background = `linear-gradient(90deg, ${isOrange ? 'var(--orange)' : 'var(--blue)'}, ${isOrange ? 'rgba(249,115,22,0.5)' : 'rgba(59,130,246,0.5)'})`;
-    confBar.style.width = '0%';
-    
-    // Show result
-    result.classList.add('visible');
-    
-    // Animate confidence bar
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        confBar.style.width = analysis.confidence + '%';
-      }, 100);
-    });
-    
-    // Render factors
-    const factorsEl = document.getElementById('signal-factors');
-    factorsEl.innerHTML = analysis.factors.map(f => `
-      <div class="signal-factor">
-        <div class="factor-dot ${f.type}"></div>
-        <span>${f.text}</span>
-      </div>
-    `).join('');
-    
-  }, 1500);
+// ===== POLL LOOP =====
+async function poll() {
+  try {
+    // Re-auth if no session
+    if (!sessionId) await auth();
+
+    const rounds = await fetchHistory();
+    if (rounds.length === 0) {
+      // Session might be expired, re-auth
+      sessionId = null;
+      return;
+    }
+
+    const newCount = mergeRounds(rounds);
+    if (newCount > 0 || allRounds.length <= 20) {
+      render();
+      if (newCount > 0) {
+        document.getElementById('statusText').textContent = newCount + ' nouveau' + (newCount > 1 ? 'x' : '') + ' tour' + (newCount > 1 ? 's' : '');
+      } else {
+        document.getElementById('statusText').textContent = allRounds.length + ' tours';
+      }
+    }
+  } catch (e) {
+    console.error('Poll error:', e);
+    document.getElementById('statusText').textContent = 'Erreur reconnexion...';
+    sessionId = null;
+  }
 }
 
-// ===================== INIT =====================
-document.addEventListener('DOMContentLoaded', () => {
-  updateStats();
-  renderRaceTrack();
-  drawDonut();
-  updateStreaks();
-  renderTable();
-});
+// ===== INIT =====
+async function init() {
+  try {
+    document.getElementById('statusText').textContent = 'Authentification...';
+    await auth();
+    document.getElementById('statusText').textContent = 'Chargement historique...';
+    await poll();
+    document.getElementById('statusBar').classList.remove('offline');
+    // Poll every 5 seconds
+    pollInterval = setInterval(poll, 5000);
+  } catch (e) {
+    console.error('Init error:', e);
+    document.getElementById('statusText').textContent = 'Hors ligne';
+    document.getElementById('statusBar').classList.add('offline');
+    // Retry after 10s
+    setTimeout(init, 10000);
+  }
+}
+
+// Handle resize for chart
+window.addEventListener('resize', () => { if (allRounds.length > 0) drawChart(); });
+
+init();
 </script>
 </body>
 </html>
