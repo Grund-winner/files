@@ -34,6 +34,18 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .vehicle-icon span:last-child{font-size:.6rem;font-weight:600;letter-spacing:1px;text-transform:uppercase}
 .vs{font-size:.75rem;font-weight:900;color:var(--text3);letter-spacing:2px}
 
+/* ===== LIVE RACE SECTION ===== */
+.race-section{background:linear-gradient(180deg,#08081a 0%,#060614 100%);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin:10px 0;position:relative}
+.race-hud{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:rgba(0,0,0,0.4);border-bottom:1px solid var(--border)}
+.race-hud .round-id{font-size:.6rem;font-weight:700;color:var(--text2);letter-spacing:1px}
+.race-hud .race-status{display:flex;align-items:center;gap:5px;font-size:.55rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase}
+.race-hud .race-status .live-dot{width:6px;height:6px;border-radius:50%;animation:pulse 1.2s infinite}
+.race-hud .race-status.live .live-dot{background:var(--green);box-shadow:0 0 8px rgba(34,197,94,0.7)}
+.race-hud .race-status.waiting .live-dot{background:var(--text3);animation:none}
+.race-hud .race-status.ended .live-dot{background:var(--orange);animation:none}
+.race-hud .race-timer{font-size:.6rem;color:var(--text3);font-weight:600;font-variant-numeric:tabular-nums}
+#raceCanvas{width:100%;height:180px;display:block}
+
 /* Stats */
 .stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:12px 0}
 .stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 8px;text-align:center}
@@ -65,7 +77,7 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .pred-reason .dot{width:4px;height:4px;border-radius:50%;background:var(--text3);flex-shrink:0}
 .pred-waiting-text{color:var(--text3);font-size:.75rem;text-align:center;padding:8px 0}
 
-/* Race Track */
+/* Race Track Bars */
 .section-title{font-size:.65rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:2px;margin:16px 0 8px}
 .race-track{display:flex;flex-direction:column;gap:3px}
 .race-row{display:flex;align-items:center;height:28px;border-radius:6px;overflow:hidden;position:relative;font-size:.55rem;font-weight:600}
@@ -115,10 +127,8 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .new-round{animation:newRound .6s ease}
 @keyframes newRound{0%{opacity:0;transform:scale(0.95)}50%{transform:scale(1.02)}100%{opacity:1;transform:scale(1)}}
-
-.coef-bar{height:4px;border-radius:2px;margin-top:2px}
-.coef-bar.orange-bar{background:var(--orange)}
-.coef-bar.blue-bar{background:var(--blue)}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-3px)}40%{transform:translateX(3px)}60%{transform:translateX(-2px)}80%{transform:translateX(2px)}}
+.screen-shake{animation:shake .3s ease}
 </style>
 </head>
 <body>
@@ -148,16 +158,27 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
     </div>
   </div>
 
+  <!-- ===== LIVE RACE ===== -->
+  <div class="race-section" id="raceSection">
+    <div class="race-hud">
+      <span class="round-id" id="raceRoundId">EN ATTENTE...</span>
+      <div class="race-status waiting" id="raceStatusLabel">
+        <div class="live-dot"></div>
+        <span id="raceStatusText">CONNEXION</span>
+      </div>
+      <span class="race-timer" id="raceTimer"></span>
+    </div>
+    <canvas id="raceCanvas"></canvas>
+  </div>
+
   <!-- Loading State -->
   <div id="loadingState" class="loading">
     <div class="spinner"></div>
     <div class="loading-text">Connexion au jeu en cours...</div>
   </div>
 
-  <!-- Main Content (hidden until data loads) -->
+  <!-- Main Content -->
   <div id="mainContent" style="display:none">
-
-    <!-- Stats -->
     <div class="stats">
       <div class="stat-card">
         <div class="stat-val" id="totalRounds">0</div>
@@ -173,7 +194,6 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
       </div>
     </div>
 
-    <!-- Prediction -->
     <div class="prediction-card pred-waiting" id="predCard">
       <div class="pred-title">PROCHAINE PREDICTION</div>
       <div id="predContent">
@@ -181,17 +201,14 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
       </div>
     </div>
 
-    <!-- Coefficient Chart -->
     <div class="section-title">Courbe des cotes</div>
     <div class="chart-container">
       <canvas class="chart-canvas" id="coefChart"></canvas>
     </div>
 
-    <!-- Race Track -->
     <div class="section-title">Derniers tours</div>
     <div class="race-track" id="raceTrack"></div>
 
-    <!-- Streak -->
     <div class="section-title">Series</div>
     <div class="streak-row">
       <div class="streak-card">
@@ -208,7 +225,6 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
       </div>
     </div>
 
-    <!-- Average Coefs -->
     <div class="section-title">Moyennes</div>
     <div class="stats">
       <div class="stat-card">
@@ -225,7 +241,6 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
       </div>
     </div>
 
-    <!-- Table -->
     <div class="section-title">Historique</div>
     <div class="table-container">
       <div class="table-row header">
@@ -241,18 +256,135 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 </div>
 
 <script>
+// ===== CONFIG =====
 const API = 'https://crash-gateway-grm-cr.gamedev-tech.cc';
+const WS_URL = 'wss://crash-ws-grm-cr.gamedev-tech.cc/connection';
 const AUTH_TOKEN = '123172b4cf2f707068d139197b939e2224651486931db746f0a87dcfa43bd4f90e06fcf18a2351a3ffe95e357c4d4a0ff21b5c90b3f555736762d31bf53c54a51b4ab4e172331f10ce5e4ed13a34d39d4a23e77ac2d5817e26ca8dbba965b1c25d28e3f41a826cb0fad7bc61e3f7c2eaa3c089ce3318c3aa69ecf31dec6ee2d0a8920e45571cd564625b2a5c887936a0778dd2c775f07901f9a9fb1361044f999e6c7362777f171cecd4525baf7746dd9c1c44e504f8287cc9.3c1681ff25e14d35a8c75f5a0ac665a9.077dee8d-c923-4c02-9bee-757573662e69';
 const CUSTOMER_ID = '077dee8d-c923-4c02-9bee-757573662e69';
 let sessionId = null;
 let allRounds = [];
-let lastRoundId = null;
 let pollInterval = null;
 const MAX_ROUNDS = 200;
 
-// CORRECT mapping: finalValues[0] = BLUE, finalValues[1] = ORANGE
+// finalValues[0] = BLUE, finalValues[1] = ORANGE
 // outcome 0 = Blue wins, outcome 1 = Orange wins
 
+// ===== RACE STATE =====
+const race = {
+  state: 'idle',       // idle | countdown | racing | crash | finished
+  roundId: null,
+  blueCoef: 1.0,
+  orangeCoef: 1.0,
+  blueTarget: 1.0,
+  orangeTarget: 1.0,
+  blueCrashed: false,
+  orangeCrashed: false,
+  winner: null,         // 'blue' | 'orange'
+  startTime: 0,
+  animProgress: 0,      // 0..1 for replay
+  animDuration: 0,
+  particles: [],
+  shakeAmount: 0,
+  lastRoundIdSeen: null,
+  roundCounter: 0
+};
+
+// ===== WEBSOCKET =====
+let ws = null;
+let wsConnected = false;
+let wsSubscribed = false;
+let wsRetries = 0;
+const MAX_WS_RETRIES = 3;
+
+function tryConnectWS() {
+  if (wsRetries >= MAX_WS_RETRIES || !sessionId) return;
+  try {
+    ws = new WebSocket(WS_URL + '?format=json');
+    ws.onopen = () => {
+      // Centrifugo connect
+      ws.send(JSON.stringify({ id: 1, method: 'connect', params: { token: sessionId } }));
+    };
+    ws.onmessage = (e) => {
+      try {
+        const msgs = e.data.split('\n').filter(Boolean);
+        for (const raw of msgs) {
+          const msg = JSON.parse(raw);
+          handleWSMessage(msg);
+        }
+      } catch(err) {}
+    };
+    ws.onerror = () => { wsRetries++; scheduleWSRetry(); };
+    ws.onclose = () => { wsConnected = false; scheduleWSRetry(); };
+  } catch(e) { wsRetries++; scheduleWSRetry(); }
+}
+
+function scheduleWSRetry() {
+  setTimeout(tryConnectWS, Math.min(15000, 5000 * (wsRetries + 1)));
+}
+
+function handleWSMessage(msg) {
+  // Connect response
+  if (msg.id === 1 && msg.result) {
+    wsConnected = true;
+    wsRetries = 0;
+    // Try subscribing to common channel names
+    const channels = ['round', 'game:round', 'crash:round', 'speedncash', 'public:round', 'game'];
+    let id = 10;
+    for (const ch of channels) {
+      ws.send(JSON.stringify({ id: id++, method: 'subscribe', params: { channel: ch } }));
+    }
+    return;
+  }
+  // Sub response
+  if (msg.id >= 10 && msg.id < 20) return;
+  // Publication
+  if (msg.channel && msg.data) {
+    wsSubscribed = true;
+    handleLiveUpdate(msg.data);
+  }
+}
+
+function handleLiveUpdate(data) {
+  // Adapt to various possible data formats
+  let coefs = null, crashed = null, state = null;
+  if (Array.isArray(data.finalValues)) coefs = data.finalValues;
+  if (Array.isArray(data.coefficients)) coefs = data.coefficients;
+  if (Array.isArray(data.crashed)) crashed = data.crashed;
+  if (data.state) state = data.state;
+
+  if (coefs) {
+    race.blueCoef = coefs[0];
+    race.orangeCoef = coefs[1];
+  }
+
+  if (crashed) {
+    race.blueCrashed = crashed[0];
+    race.orangeCrashed = crashed[1];
+  }
+
+  if (state === 'running' || state === 'started') {
+    if (race.state !== 'racing') {
+      race.state = 'racing';
+      race.startTime = performance.now();
+      updateRaceStatus('live', 'EN COURS');
+    }
+  }
+  if (state === 'ended' || (race.blueCrashed && race.orangeCrashed)) {
+    race.winner = race.blueCoef >= race.orangeCoef ? 'blue' : 'orange';
+    race.state = 'finished';
+    updateRaceStatus('ended', 'TERMINE');
+  }
+  if (race.blueCrashed || race.orangeCrashed) {
+    if (race.state === 'racing') {
+      race.state = 'crash';
+      race.shakeAmount = 6;
+      spawnCrashParticles(race.blueCrashed ? 'blue' : 'orange');
+      updateRaceStatus('live', 'CRASH!');
+    }
+  }
+}
+
+// ===== AUTH & API =====
 async function auth() {
   const r = await fetch(API + '/user/auth', {
     method: 'POST',
@@ -291,26 +423,463 @@ function mergeRounds(newRounds) {
   return added;
 }
 
+// ===== RACE ANIMATION (replay from history) =====
+function triggerRaceReplay(round) {
+  race.roundId = round.id;
+  race.blueTarget = round.finalValues[0];
+  race.orangeTarget = round.finalValues[1];
+  race.blueCrashed = false;
+  race.orangeCrashed = false;
+  race.winner = null;
+  race.blueCoef = 1.0;
+  race.orangeCoef = 1.0;
+  race.animProgress = 0;
+  race.shakeAmount = 0;
+  race.particles = [];
+
+  // The losing vehicle has lower coefficient
+  const blueLoses = race.blueTarget < race.orangeTarget;
+  const crashPoint = blueLoses ? 0.55 : 0.55;
+  race.animDuration = Math.max(2500, Math.min(5000, Math.max(race.blueTarget, race.orangeTarget) * 700));
+  race._crashProgress = crashPoint;
+  race._blueLoses = blueLoses;
+
+  race.state = 'racing';
+  race.startTime = performance.now();
+  race.roundCounter++;
+
+  document.getElementById('raceRoundId').textContent = 'TOUR #' + (allRounds.length - allRounds.findIndex(r => r.id === round.id));
+  updateRaceStatus('live', 'EN COURS');
+}
+
+function updateRaceAnimation(now) {
+  if (race.state !== 'racing' && race.state !== 'crash' && race.state !== 'finished') return;
+
+  const elapsed = now - race.startTime;
+  const progress = Math.min(1, elapsed / race.animDuration);
+  race.animProgress = progress;
+
+  // Easing for acceleration feel
+  const easeOut = 1 - Math.pow(1 - progress, 2.5);
+
+  if (race.state === 'racing') {
+    if (progress < race._crashProgress) {
+      // Both vehicles advancing
+      const preCrashEase = easeOut * (race._crashProgress / 1);
+      const blueProgress = preCrashEase * (race.blueTarget - 1) / Math.max(race.blueTarget, race.orangeTarget);
+      const orangeProgress = preCrashEase * (race.orangeTarget - 1) / Math.max(race.blueTarget, race.orangeTarget);
+      race.blueCoef = 1 + blueProgress * (race.blueTarget - 1);
+      race.orangeCoef = 1 + orangeProgress * (race.orangeTarget - 1);
+    } else {
+      // Crash moment
+      if (race._blueLoses) {
+        race.blueCoef = race.blueTarget;
+        race.blueCrashed = true;
+        // Orange continues
+        const postProgress = (progress - race._crashProgress) / (1 - race._crashProgress);
+        const postEase = 1 - Math.pow(1 - postProgress, 1.5);
+        race.orangeCoef = race.orangeTarget * 0.6 + postEase * (race.orangeTarget * 0.4);
+      } else {
+        race.orangeCoef = race.orangeTarget;
+        race.orangeCrashed = true;
+        const postProgress = (progress - race._crashProgress) / (1 - race._crashProgress);
+        const postEase = 1 - Math.pow(1 - postProgress, 1.5);
+        race.blueCoef = race.blueTarget * 0.6 + postEase * (race.blueTarget * 0.4);
+      }
+      race.state = 'crash';
+      race.shakeAmount = 8;
+      spawnCrashParticles(race._blueLoses ? 'blue' : 'orange');
+      updateRaceStatus('live', 'CRASH!');
+    }
+  } else if (race.state === 'crash') {
+    // Continue advancing winner
+    const postProgress = Math.min(1, (progress - race._crashProgress) / (1 - race._crashProgress));
+    const postEase = 1 - Math.pow(1 - postProgress, 1.5);
+    if (race._blueLoses) {
+      race.orangeCoef = race.orangeTarget * 0.6 + postEase * (race.orangeTarget * 0.4);
+    } else {
+      race.blueCoef = race.blueTarget * 0.6 + postEase * (race.blueTarget * 0.4);
+    }
+
+    if (progress >= 1) {
+      race.blueCoef = race.blueTarget;
+      race.orangeCoef = race.orangeTarget;
+      race.winner = race._blueLoses ? 'orange' : 'blue';
+      race.state = 'finished';
+      updateRaceStatus('ended', 'TERMINE');
+      // Reset after 3s
+      setTimeout(() => {
+        if (race.state === 'finished') {
+          race.state = 'idle';
+          updateRaceStatus('waiting', 'PROCHAIN TOUR');
+        }
+      }, 3000);
+    }
+  }
+
+  // Shake decay
+  if (race.shakeAmount > 0) race.shakeAmount *= 0.92;
+  if (race.shakeAmount < 0.2) race.shakeAmount = 0;
+}
+
+// ===== PARTICLES =====
+function spawnCrashParticles(color) {
+  const cx = color === 'blue' ? getCarX('blue') : getCarX('orange');
+  const cy = color === 'blue' ? 58 : 118;
+  for (let i = 0; i < 25; i++) {
+    race.particles.push({
+      x: cx, y: cy,
+      vx: (Math.random() - 0.5) * 8,
+      vy: (Math.random() - 0.5) * 6,
+      life: 1,
+      decay: 0.015 + Math.random() * 0.02,
+      size: 2 + Math.random() * 4,
+      color: color === 'blue' ? '#3b82f6' : '#f97316'
+    });
+  }
+  // Sparks
+  for (let i = 0; i < 15; i++) {
+    race.particles.push({
+      x: cx, y: cy,
+      vx: (Math.random() - 0.5) * 12,
+      vy: (Math.random() - 0.5) * 8,
+      life: 1,
+      decay: 0.03 + Math.random() * 0.03,
+      size: 1 + Math.random() * 2,
+      color: '#fbbf24'
+    });
+  }
+}
+
+function getCarX(color) {
+  const canvas = document.getElementById('raceCanvas');
+  const W = canvas.getBoundingClientRect().width;
+  const padL = 60, padR = 80;
+  const trackW = W - padL - padR;
+  const coef = color === 'blue' ? race.blueCoef : race.orangeCoef;
+  const maxCoef = Math.max(race.blueTarget, race.orangeTarget, 2);
+  const pct = Math.min(1, (coef - 1) / (maxCoef - 1 || 1));
+  return padL + pct * trackW;
+}
+
+function updateParticles() {
+  for (let i = race.particles.length - 1; i >= 0; i--) {
+    const p = race.particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.15;
+    p.vx *= 0.98;
+    p.life -= p.decay;
+    if (p.life <= 0) race.particles.splice(i, 1);
+  }
+}
+
+// ===== CANVAS RENDERER =====
+let raceAnimFrame = null;
+
+function initRaceCanvas() {
+  const canvas = document.getElementById('raceCanvas');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+
+  function loop(now) {
+    renderRaceFrame(now);
+    raceAnimFrame = requestAnimationFrame(loop);
+  }
+  raceAnimFrame = requestAnimationFrame(loop);
+}
+
+function renderRaceFrame(now) {
+  const canvas = document.getElementById('raceCanvas');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+
+  if (canvas.width !== Math.round(rect.width * dpr) || canvas.height !== Math.round(rect.height * dpr)) {
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+  }
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = rect.height;
+
+  // Shake offset
+  let sx = 0, sy = 0;
+  if (race.shakeAmount > 0) {
+    sx = (Math.random() - 0.5) * race.shakeAmount;
+    sy = (Math.random() - 0.5) * race.shakeAmount;
+  }
+  ctx.save();
+  ctx.translate(sx, sy);
+
+  // Background
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+  bgGrad.addColorStop(0, '#0a0a1a');
+  bgGrad.addColorStop(0.5, '#080816');
+  bgGrad.addColorStop(1, '#0a0a1a');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(-5, -5, W + 10, H + 10);
+
+  // Grid pattern
+  ctx.strokeStyle = 'rgba(255,255,255,0.015)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 30) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  for (let y = 0; y < H; y += 30) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+
+  const padL = 60, padR = 80;
+  const trackW = W - padL - padR;
+  const laneH = 46;
+  const blueY = 28, orangeY = blueY + laneH + 18;
+  const maxCoef = Math.max(race.blueTarget, race.orangeTarget, 2);
+
+  // === LANE BACKGROUNDS ===
+  // Blue lane
+  const blueLaneGrad = ctx.createLinearGradient(padL, 0, padL + trackW, 0);
+  blueLaneGrad.addColorStop(0, 'rgba(59,130,246,0.04)');
+  blueLaneGrad.addColorStop(1, 'rgba(59,130,246,0.08)');
+  ctx.fillStyle = blueLaneGrad;
+  ctx.beginPath(); ctx.roundRect(padL, blueY, trackW, laneH, 6); ctx.fill();
+
+  // Orange lane
+  const orangeLaneGrad = ctx.createLinearGradient(padL, 0, padL + trackW, 0);
+  orangeLaneGrad.addColorStop(0, 'rgba(249,115,22,0.04)');
+  orangeLaneGrad.addColorStop(1, 'rgba(249,115,22,0.08)');
+  ctx.fillStyle = orangeLaneGrad;
+  ctx.beginPath(); ctx.roundRect(padL, orangeY, trackW, laneH, 6); ctx.fill();
+
+  // Lane borders
+  ctx.strokeStyle = 'rgba(59,130,246,0.12)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.roundRect(padL, blueY, trackW, laneH, 6); ctx.stroke();
+  ctx.strokeStyle = 'rgba(249,115,22,0.12)';
+  ctx.beginPath(); ctx.roundRect(padL, orangeY, trackW, laneH, 6); ctx.stroke();
+
+  // Center line
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.setLineDash([6, 6]);
+  ctx.beginPath(); ctx.moveTo(padL, blueY + laneH + 9); ctx.lineTo(padL + trackW, blueY + laneH + 9); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Start line
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([4, 3]);
+  ctx.beginPath(); ctx.moveTo(padL, blueY); ctx.lineTo(padL, orangeY + laneH); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // === PROGRESS BARS ===
+  const bluePct = Math.min(1, (race.blueCoef - 1) / (maxCoef - 1 || 1));
+  const orangePct = Math.min(1, (race.orangeCoef - 1) / (maxCoef - 1 || 1));
+
+  // Blue progress
+  if (bluePct > 0 && !race.blueCrashed) {
+    const bGrad = ctx.createLinearGradient(padL, 0, padL + bluePct * trackW, 0);
+    bGrad.addColorStop(0, 'rgba(59,130,246,0.0)');
+    bGrad.addColorStop(1, 'rgba(59,130,246,0.15)');
+    ctx.fillStyle = bGrad;
+    ctx.beginPath(); ctx.roundRect(padL + 1, blueY + 1, bluePct * trackW - 2, laneH - 2, 5); ctx.fill();
+  }
+
+  // Orange progress
+  if (orangePct > 0 && !race.orangeCrashed) {
+    const oGrad = ctx.createLinearGradient(padL, 0, padL + orangePct * trackW, 0);
+    oGrad.addColorStop(0, 'rgba(249,115,22,0.0)');
+    oGrad.addColorStop(1, 'rgba(249,115,22,0.15)');
+    ctx.fillStyle = oGrad;
+    ctx.beginPath(); ctx.roundRect(padL + 1, orangeY + 1, orangePct * trackW - 2, laneH - 2, 5); ctx.fill();
+  }
+
+  // === VEHICLES ===
+  const blueX = padL + bluePct * trackW;
+  const orangeX = padL + orangePct * trackW;
+  const carW = 38, carH = 26;
+
+  drawVehicle(ctx, blueX - carW, blueY + (laneH - carH) / 2, carW, carH, '#3b82f6', 'B', race.blueCrashed, race.state === 'racing');
+  drawVehicle(ctx, orangeX - carW, orangeY + (laneH - carH) / 2, carW, carH, '#f97316', 'O', race.orangeCrashed, race.state === 'racing');
+
+  // Crash X mark
+  if (race.blueCrashed) drawCrashMark(ctx, blueX - carW / 2, blueY + laneH / 2);
+  if (race.orangeCrashed) drawCrashMark(ctx, orangeX - carW / 2, orangeY + laneH / 2);
+
+  // === COEFFICIENT DISPLAYS ===
+  ctx.font = 'bold 18px Inter, system-ui';
+  ctx.textAlign = 'right';
+  // Blue coef
+  ctx.fillStyle = race.blueCrashed ? 'rgba(59,130,246,0.4)' : '#3b82f6';
+  ctx.fillText(race.blueCoef.toFixed(2) + 'x', W - 12, blueY + laneH / 2 + 6);
+  // Orange coef
+  ctx.fillStyle = race.orangeCrashed ? 'rgba(249,115,22,0.4)' : '#f97316';
+  ctx.fillText(race.orangeCoef.toFixed(2) + 'x', W - 12, orangeY + laneH / 2 + 6);
+
+  // === LABELS ===
+  ctx.font = 'bold 10px Inter, system-ui';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#3b82f6';
+  ctx.fillText('BLEU', 10, blueY + laneH / 2 + 4);
+  ctx.fillStyle = '#f97316';
+  ctx.fillText('ORANGE', 10, orangeY + laneH / 2 + 4);
+
+  // === WINNER BADGE ===
+  if (race.state === 'finished' && race.winner) {
+    const wy = race.winner === 'blue' ? blueY : orangeY;
+    const wx = race.winner === 'blue' ? blueX : orangeX;
+    ctx.fillStyle = race.winner === 'blue' ? 'rgba(59,130,246,0.2)' : 'rgba(249,115,22,0.2)';
+    ctx.beginPath();
+    ctx.arc(wx - carW / 2, wy + laneH / 2, 22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = race.winner === 'blue' ? '#3b82f6' : '#f97316';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  // === PARTICLES ===
+  updateParticles();
+  for (const p of race.particles) {
+    ctx.globalAlpha = p.life;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  // === IDLE STATE TEXT ===
+  if (race.state === 'idle') {
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    ctx.font = '600 14px Inter, system-ui';
+    ctx.textAlign = 'center';
+    ctx.fillText('EN ATTENTE DU PROCHAIN TOUR...', W / 2, H / 2 + 5);
+  }
+
+  // Timer
+  if (race.state === 'racing' || race.state === 'crash') {
+    const elapsed = ((now - race.startTime) / 1000).toFixed(1);
+    document.getElementById('raceTimer').textContent = elapsed + 's';
+  } else {
+    document.getElementById('raceTimer').textContent = '';
+  }
+
+  ctx.restore();
+
+  // Update animation
+  if (!wsSubscribed) {
+    updateRaceAnimation(now);
+  }
+}
+
+function drawVehicle(ctx, x, y, w, h, color, label, crashed, moving) {
+  // Glow
+  if (!crashed && moving) {
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 18;
+  }
+
+  // Body
+  ctx.fillStyle = crashed ? 'rgba(100,100,100,0.5)' : color;
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, 5);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // Outline
+  ctx.strokeStyle = crashed ? 'rgba(100,100,100,0.3)' : color;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, 5);
+  ctx.stroke();
+
+  // Windshield
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.beginPath();
+  ctx.roundRect(x + w - 13, y + 4, 10, h - 8, 2);
+  ctx.fill();
+
+  // Wheels
+  ctx.fillStyle = crashed ? '#333' : '#1a1a2e';
+  ctx.beginPath();
+  ctx.arc(x + 10, y + h, 4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x + w - 10, y + h, 4, 0, Math.PI * 2);
+  ctx.fill();
+  // Wheel caps
+  ctx.fillStyle = crashed ? '#444' : '#333';
+  ctx.beginPath();
+  ctx.arc(x + 10, y + h, 2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x + w - 10, y + h, 2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Label
+  ctx.fillStyle = crashed ? 'rgba(255,255,255,0.2)' : '#fff';
+  ctx.font = 'bold 11px Inter, system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillText(label, x + (w - 10) / 2, y + h / 2 + 4);
+
+  // Speed lines when moving
+  if (!crashed && moving) {
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = 0.3;
+    ctx.lineWidth = 1.5;
+    for (let i = 1; i <= 3; i++) {
+      const ly = y + 5 + (i - 1) * 8;
+      const lx = x - 5 - i * 7 - Math.random() * 4;
+      const ll = 10 + Math.random() * 15;
+      ctx.beginPath();
+      ctx.moveTo(lx, ly);
+      ctx.lineTo(lx - ll, ly);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+}
+
+function drawCrashMark(ctx, x, y) {
+  ctx.strokeStyle = '#ef4444';
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+  const s = 10;
+  ctx.beginPath();
+  ctx.moveTo(x - s, y - s); ctx.lineTo(x + s, y + s);
+  ctx.moveTo(x + s, y - s); ctx.lineTo(x - s, y + s);
+  ctx.stroke();
+  ctx.lineCap = 'butt';
+}
+
+function updateRaceStatus(type, text) {
+  const el = document.getElementById('raceStatusLabel');
+  const txt = document.getElementById('raceStatusText');
+  el.className = 'race-status ' + type;
+  txt.textContent = text;
+  if (type === 'live' && text === 'CRASH!') {
+    txt.style.color = 'var(--red)';
+  } else if (type === 'live') {
+    txt.style.color = 'var(--green)';
+  } else if (type === 'ended') {
+    txt.style.color = 'var(--orange)';
+  } else {
+    txt.style.color = 'var(--text3)';
+  }
+}
+
 // ===== PREDICTION ENGINE =====
 function predict() {
   if (allRounds.length < 5) return null;
   const last = allRounds[0];
   const recent = allRounds.slice(0, Math.min(20, allRounds.length));
 
-  let orangeScore = 50;
-  let blueScore = 50;
+  let orangeScore = 50, blueScore = 50;
   const reasons = [];
 
-  // 1. Win rate in last 10 (outcome 0 = Blue wins, outcome 1 = Orange wins)
   const last10 = recent.slice(0, Math.min(10, recent.length));
   const bWins = last10.filter(r => r.outcome === 0).length;
   const oWins = last10.length - bWins;
   if (bWins >= 7) { blueScore += 15; reasons.push('Bleu domine les 10 derniers tours'); }
   else if (oWins >= 7) { orangeScore += 15; reasons.push('Orange domine les 10 derniers tours'); }
 
-  // 2. Current streak (outcome 0 = Blue, outcome 1 = Orange)
-  let streak = 1;
-  let streakSide = last.outcome;
+  let streak = 1, streakSide = last.outcome;
   for (let i = 1; i < recent.length; i++) {
     if (recent[i].outcome === streakSide) streak++;
     else break;
@@ -323,7 +892,6 @@ function predict() {
     else { blueScore += 10; reasons.push('Serie Orange de 3 \u2014 possible inversion'); }
   }
 
-  // 3. Alternation pattern
   let altCount = 0;
   for (let i = 0; i < Math.min(6, recent.length - 1); i++) {
     if (recent[i].outcome !== recent[i + 1].outcome) altCount++;
@@ -334,7 +902,6 @@ function predict() {
     else { blueScore += 12; reasons.push('Fort alternation detectee'); }
   }
 
-  // 4. Coefficient heat (finalValues[0] = Blue coef, finalValues[1] = Orange coef)
   const bCoefs = recent.map(r => r.finalValues[0]);
   const oCoefs = recent.map(r => r.finalValues[1]);
   const avgB = bCoefs.reduce((a, b) => a + b, 0) / bCoefs.length;
@@ -342,7 +909,6 @@ function predict() {
   if (avgB > avgO * 1.3) { blueScore += 8; reasons.push('Bleu en forme (moy. ' + avgB.toFixed(1) + 'x)'); }
   else if (avgO > avgB * 1.3) { orangeScore += 8; reasons.push('Orange en forme (moy. ' + avgO.toFixed(1) + 'x)'); }
 
-  // 5. Last round loser revenge (outcome 0 = Blue wins, loser = 1 = Orange)
   const loser = last.outcome === 0 ? 1 : 0;
   const last3WinnerCount = recent.slice(0, 3).filter(r => r.outcome !== loser).length;
   if (last3WinnerCount >= 2) {
@@ -353,31 +919,25 @@ function predict() {
   const total = orangeScore + blueScore;
   const orangePct = Math.round((orangeScore / total) * 100);
   const bluePct = 100 - orangePct;
-  // predicted: 0 = Blue, 1 = Orange
   const predicted = bluePct > orangePct ? 0 : 1;
   const confidence = Math.max(orangePct, bluePct);
-
   return { predicted, confidence, reasons, orangePct, bluePct };
 }
 
 // ===== RENDERING =====
 function render() {
   if (allRounds.length === 0) return;
-
   document.getElementById('loadingState').style.display = 'none';
   document.getElementById('mainContent').style.display = 'block';
 
   const n = allRounds.length;
-  // outcome 0 = Blue wins, outcome 1 = Orange wins
   const bWins = allRounds.filter(r => r.outcome === 0).length;
   const oWins = n - bWins;
 
-  // Stats
   document.getElementById('totalRounds').textContent = n;
   document.getElementById('blueRate').textContent = Math.round((bWins / n) * 100) + '%';
   document.getElementById('orangeRate').textContent = Math.round((oWins / n) * 100) + '%';
 
-  // Averages (finalValues[0] = Blue, finalValues[1] = Orange)
   const avgB = (allRounds.reduce((s, r) => s + r.finalValues[0], 0) / n).toFixed(2);
   const avgO = (allRounds.reduce((s, r) => s + r.finalValues[1], 0) / n).toFixed(2);
   const avgT = (allRounds.reduce((s, r) => s + r.topCoefficient, 0) / n).toFixed(2);
@@ -385,7 +945,6 @@ function render() {
   document.getElementById('avgOrange').textContent = avgO + 'x';
   document.getElementById('avgTop').textContent = avgT + 'x';
 
-  // Streaks (outcome 0 = Blue, outcome 1 = Orange)
   let curStreak = 1, curSide = allRounds[0].outcome;
   for (let i = 1; i < allRounds.length; i++) {
     if (allRounds[i].outcome === curSide) curStreak++;
@@ -409,12 +968,10 @@ function render() {
   document.getElementById('maxOrange').textContent = maxO;
   document.getElementById('maxBlue').textContent = maxB;
 
-  // Prediction
   const pred = predict();
   const predCard = document.getElementById('predCard');
   const predContent = document.getElementById('predContent');
   if (pred) {
-    // predicted 0 = Blue, predicted 1 = Orange
     const isO = pred.predicted === 1;
     predCard.className = 'prediction-card ' + (isO ? 'pred-orange' : 'pred-blue');
     predContent.innerHTML = `
@@ -440,7 +997,7 @@ function render() {
       </div>`;
   }
 
-  // Race Track (last 12) — finalValues[0] = Blue, finalValues[1] = Orange
+  // Race Track bars
   const track = document.getElementById('raceTrack');
   const trackRounds = allRounds.slice(0, 12);
   track.innerHTML = trackRounds.map((r, i) => {
@@ -449,7 +1006,7 @@ function render() {
     const total = blueCoef + orangeCoef;
     const bPct = (blueCoef / total * 100).toFixed(1);
     const oPct = (orangeCoef / total * 100).toFixed(1);
-    const isO = r.outcome === 1; // outcome 1 = Orange wins
+    const isO = r.outcome === 1;
     return `<div class="race-row ${isO ? 'orange-won' : 'blue-won'} ${i === 0 ? 'new-round' : ''}">
       <div class="lane-blue" style="width:${bPct}%"></div>
       <div class="lane-orange" style="width:${oPct}%"></div>
@@ -459,15 +1016,13 @@ function render() {
     </div>`;
   }).join('');
 
-  // Chart
   drawChart();
 
-  // Table (last 30) — finalValues[0] = Blue, finalValues[1] = Orange
   const table = document.getElementById('historyTable');
   const tableRounds = allRounds.slice(0, 30);
   table.innerHTML = tableRounds.map((r, i) => {
     const blueCoef = r.finalValues[0], orangeCoef = r.finalValues[1];
-    const isO = r.outcome === 1; // outcome 1 = Orange wins
+    const isO = r.outcome === 1;
     return `<div class="table-row ${i === 0 ? 'new-round' : ''}">
       <div class="num">${n - i}</div>
       <div class="coef-b">${blueCoef.toFixed(2)}x</div>
@@ -488,7 +1043,6 @@ function drawChart() {
   canvas.height = rect.height * dpr;
   ctx.scale(dpr, dpr);
   const W = rect.width, H = rect.height;
-
   ctx.clearRect(0, 0, W, H);
 
   const rounds = allRounds.slice(0, 40).reverse();
@@ -499,9 +1053,7 @@ function drawChart() {
   const ch = H - pad.t - pad.b;
 
   let maxCoef = 1;
-  for (const r of rounds) {
-    maxCoef = Math.max(maxCoef, r.finalValues[0], r.finalValues[1]);
-  }
+  for (const r of rounds) maxCoef = Math.max(maxCoef, r.finalValues[0], r.finalValues[1]);
   maxCoef = Math.ceil(maxCoef / 5) * 5 || 5;
 
   ctx.strokeStyle = 'rgba(255,255,255,0.04)';
@@ -516,9 +1068,7 @@ function drawChart() {
   }
 
   function drawLine(getVal, color, glowColor) {
-    ctx.strokeStyle = glowColor;
-    ctx.lineWidth = 6;
-    ctx.lineJoin = 'round';
+    ctx.strokeStyle = glowColor; ctx.lineWidth = 6; ctx.lineJoin = 'round';
     ctx.beginPath();
     for (let i = 0; i < rounds.length; i++) {
       const x = pad.l + (i / (rounds.length - 1)) * cw;
@@ -526,9 +1076,7 @@ function drawChart() {
       i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     }
     ctx.stroke();
-
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = color; ctx.lineWidth = 2;
     ctx.beginPath();
     for (let i = 0; i < rounds.length; i++) {
       const x = pad.l + (i / (rounds.length - 1)) * cw;
@@ -536,7 +1084,6 @@ function drawChart() {
       i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     }
     ctx.stroke();
-
     const last = rounds[rounds.length - 1];
     const lx = pad.l + cw;
     const ly = pad.t + ch - (Math.min(getVal(last), maxCoef) / maxCoef) * ch;
@@ -544,7 +1091,6 @@ function drawChart() {
     ctx.beginPath(); ctx.arc(lx, ly, 3, 0, Math.PI * 2); ctx.fill();
   }
 
-  // finalValues[0] = Blue (drawn in blue), finalValues[1] = Orange (drawn in orange)
   drawLine(r => r.finalValues[0], '#3b82f6', 'rgba(59,130,246,0.15)');
   drawLine(r => r.finalValues[1], '#f97316', 'rgba(249,115,22,0.15)');
 
@@ -557,7 +1103,6 @@ function drawChart() {
     ctx.fillText((allRounds.length - (rounds.length - 1 - i)).toString(), x, H - 4);
   }
 
-  // Legend
   ctx.font = 'bold 9px Inter, system-ui';
   ctx.textAlign = 'left';
   ctx.fillStyle = '#3b82f6';
@@ -570,16 +1115,22 @@ function drawChart() {
 async function poll() {
   try {
     if (!sessionId) await auth();
-
     const rounds = await fetchHistory();
-    if (rounds.length === 0) {
-      sessionId = null;
-      return;
-    }
+    if (rounds.length === 0) { sessionId = null; return; }
 
     const newCount = mergeRounds(rounds);
     if (newCount > 0 || allRounds.length <= 20) {
       render();
+
+      // Trigger race replay for new rounds (only if not live WS)
+      if (!wsSubscribed && newCount > 0) {
+        const latest = allRounds[0];
+        if (latest.id !== race.lastRoundIdSeen) {
+          race.lastRoundIdSeen = latest.id;
+          triggerRaceReplay(latest);
+        }
+      }
+
       if (newCount > 0) {
         document.getElementById('statusText').textContent = newCount + ' nouveau' + (newCount > 1 ? 'x' : '') + ' tour' + (newCount > 1 ? 's' : '');
       } else {
@@ -596,12 +1147,21 @@ async function poll() {
 // ===== INIT =====
 async function init() {
   try {
+    updateRaceStatus('waiting', 'CONNEXION');
     document.getElementById('statusText').textContent = 'Authentification...';
     await auth();
     document.getElementById('statusText').textContent = 'Chargement historique...';
     await poll();
     document.getElementById('statusBar').classList.remove('offline');
-    pollInterval = setInterval(poll, 5000);
+
+    // Start race canvas
+    initRaceCanvas();
+
+    // Try WebSocket for live data
+    tryConnectWS();
+
+    // Poll every 3s
+    pollInterval = setInterval(poll, 3000);
   } catch (e) {
     console.error('Init error:', e);
     document.getElementById('statusText').textContent = 'Hors ligne';
@@ -610,7 +1170,9 @@ async function init() {
   }
 }
 
-window.addEventListener('resize', () => { if (allRounds.length > 0) drawChart(); });
+window.addEventListener('resize', () => {
+  if (allRounds.length > 0) drawChart();
+});
 
 init();
 </script>
