@@ -116,7 +116,6 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 .new-round{animation:newRound .6s ease}
 @keyframes newRound{0%{opacity:0;transform:scale(0.95)}50%{transform:scale(1.02)}100%{opacity:1;transform:scale(1)}}
 
-/* Coef bar in table */
 .coef-bar{height:4px;border-radius:2px;margin-top:2px}
 .coef-bar.orange-bar{background:var(--orange)}
 .coef-bar.blue-bar{background:var(--blue)}
@@ -138,14 +137,14 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
 
   <!-- Vehicles -->
   <div class="vehicles">
-    <div class="vehicle-icon orange">
-      <div class="dot">O</div>
-      <span style="color:var(--orange)">Orange</span>
-    </div>
-    <div class="vs">VS</div>
     <div class="vehicle-icon blue">
       <div class="dot">B</div>
       <span style="color:var(--blue)">Bleu</span>
+    </div>
+    <div class="vs">VS</div>
+    <div class="vehicle-icon orange">
+      <div class="dot">O</div>
+      <span style="color:var(--orange)">Orange</span>
     </div>
   </div>
 
@@ -165,12 +164,12 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
         <div class="stat-label">Tours</div>
       </div>
       <div class="stat-card">
-        <div class="stat-val orange" id="orangeRate">0%</div>
-        <div class="stat-label">Orange</div>
-      </div>
-      <div class="stat-card">
         <div class="stat-val blue" id="blueRate">0%</div>
         <div class="stat-label">Bleu</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val orange" id="orangeRate">0%</div>
+        <div class="stat-label">Orange</div>
       </div>
     </div>
 
@@ -199,13 +198,13 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
         <div class="val" id="currentStreak">-</div>
         <div class="lbl">Serie en cours</div>
       </div>
-      <div class="streak-card orange">
-        <div class="val" id="maxOrange">0</div>
-        <div class="lbl">Max Orange</div>
-      </div>
       <div class="streak-card blue">
         <div class="val" id="maxBlue">0</div>
         <div class="lbl">Max Bleu</div>
+      </div>
+      <div class="streak-card orange">
+        <div class="val" id="maxOrange">0</div>
+        <div class="lbl">Max Orange</div>
       </div>
     </div>
 
@@ -213,12 +212,12 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
     <div class="section-title">Moyennes</div>
     <div class="stats">
       <div class="stat-card">
-        <div class="stat-val orange" id="avgOrange">0x</div>
-        <div class="stat-label">Orange moy.</div>
-      </div>
-      <div class="stat-card">
         <div class="stat-val blue" id="avgBlue">0x</div>
         <div class="stat-label">Bleu moy.</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val orange" id="avgOrange">0x</div>
+        <div class="stat-label">Orange moy.</div>
       </div>
       <div class="stat-card">
         <div class="stat-val" id="avgTop" style="color:#fbbf24">0x</div>
@@ -231,8 +230,8 @@ body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg)
     <div class="table-container">
       <div class="table-row header">
         <div class="num">#</div>
-        <div style="text-align:center">Orange</div>
         <div style="text-align:center">Bleu</div>
+        <div style="text-align:center">Orange</div>
         <div class="winner">Gagnant</div>
         <div class="top">Top</div>
       </div>
@@ -250,6 +249,9 @@ let allRounds = [];
 let lastRoundId = null;
 let pollInterval = null;
 const MAX_ROUNDS = 200;
+
+// CORRECT mapping: finalValues[0] = BLUE, finalValues[1] = ORANGE
+// outcome 0 = Blue wins, outcome 1 = Orange wins
 
 async function auth() {
   const r = await fetch(API + '/user/auth', {
@@ -280,7 +282,6 @@ function mergeRounds(newRounds) {
       added++;
     }
   }
-  // Sort by position in API response (newest first = index 0)
   allRounds.sort((a, b) => {
     const ia = newRounds.findIndex(r => r.id === a.id);
     const ib = newRounds.findIndex(r => r.id === b.id);
@@ -300,14 +301,14 @@ function predict() {
   let blueScore = 50;
   const reasons = [];
 
-  // 1. Win rate in last 10
+  // 1. Win rate in last 10 (outcome 0 = Blue wins, outcome 1 = Orange wins)
   const last10 = recent.slice(0, Math.min(10, recent.length));
-  const oWins = last10.filter(r => r.outcome === 0).length;
-  const bWins = last10.length - oWins;
-  if (oWins >= 7) { orangeScore += 15; reasons.push('Orange domine les 10 derniers tours'); }
-  else if (bWins >= 7) { blueScore += 15; reasons.push('Bleu domine les 10 derniers tours'); }
+  const bWins = last10.filter(r => r.outcome === 0).length;
+  const oWins = last10.length - bWins;
+  if (bWins >= 7) { blueScore += 15; reasons.push('Bleu domine les 10 derniers tours'); }
+  else if (oWins >= 7) { orangeScore += 15; reasons.push('Orange domine les 10 derniers tours'); }
 
-  // 2. Current streak
+  // 2. Current streak (outcome 0 = Blue, outcome 1 = Orange)
   let streak = 1;
   let streakSide = last.outcome;
   for (let i = 1; i < recent.length; i++) {
@@ -315,12 +316,11 @@ function predict() {
     else break;
   }
   if (streak >= 4) {
-    // Long streak reversal
-    if (streakSide === 0) { blueScore += 20; reasons.push('Serie Orange de ' + streak + ' — inversion probable'); }
-    else { orangeScore += 20; reasons.push('Serie Bleu de ' + streak + ' — inversion probable'); }
+    if (streakSide === 0) { orangeScore += 20; reasons.push('Serie Bleu de ' + streak + ' \u2014 inversion probable'); }
+    else { blueScore += 20; reasons.push('Serie Orange de ' + streak + ' \u2014 inversion probable'); }
   } else if (streak === 3) {
-    if (streakSide === 0) { blueScore += 10; reasons.push('Serie Orange de 3 — possible inversion'); }
-    else { orangeScore += 10; reasons.push('Serie Bleu de 3 — possible inversion'); }
+    if (streakSide === 0) { orangeScore += 10; reasons.push('Serie Bleu de 3 \u2014 possible inversion'); }
+    else { blueScore += 10; reasons.push('Serie Orange de 3 \u2014 possible inversion'); }
   }
 
   // 3. Alternation pattern
@@ -330,31 +330,31 @@ function predict() {
   }
   const altRate = altCount / Math.min(5, recent.length - 1);
   if (altRate >= 0.8) {
-    // Strong alternation — bet against last winner
-    if (last.outcome === 0) { blueScore += 12; reasons.push('Fort alternation detectee'); }
-    else { orangeScore += 12; reasons.push('Fort alternation detectee'); }
+    if (last.outcome === 0) { orangeScore += 12; reasons.push('Fort alternation detectee'); }
+    else { blueScore += 12; reasons.push('Fort alternation detectee'); }
   }
 
-  // 4. Coefficient heat — which vehicle tends to get higher coefs
-  const oCoefs = recent.map(r => r.finalValues[0]);
-  const bCoefs = recent.map(r => r.finalValues[1]);
-  const avgO = oCoefs.reduce((a, b) => a + b, 0) / oCoefs.length;
+  // 4. Coefficient heat (finalValues[0] = Blue coef, finalValues[1] = Orange coef)
+  const bCoefs = recent.map(r => r.finalValues[0]);
+  const oCoefs = recent.map(r => r.finalValues[1]);
   const avgB = bCoefs.reduce((a, b) => a + b, 0) / bCoefs.length;
-  if (avgO > avgB * 1.3) { orangeScore += 8; reasons.push('Orange en forme (moy. ' + avgO.toFixed(1) + 'x)'); }
-  else if (avgB > avgO * 1.3) { blueScore += 8; reasons.push('Bleu en forme (moy. ' + avgB.toFixed(1) + 'x)'); }
+  const avgO = oCoefs.reduce((a, b) => a + b, 0) / oCoefs.length;
+  if (avgB > avgO * 1.3) { blueScore += 8; reasons.push('Bleu en forme (moy. ' + avgB.toFixed(1) + 'x)'); }
+  else if (avgO > avgB * 1.3) { orangeScore += 8; reasons.push('Orange en forme (moy. ' + avgO.toFixed(1) + 'x)'); }
 
-  // 5. Last round loser revenge
+  // 5. Last round loser revenge (outcome 0 = Blue wins, loser = 1 = Orange)
   const loser = last.outcome === 0 ? 1 : 0;
-  const last3Losers = recent.slice(0, 3).filter(r => r.outcome !== loser).length;
-  if (last3Losers >= 2) {
-    if (loser === 0) { orangeScore += 5; reasons.push('Orange perdant 2/3 — revenge possible'); }
-    else { blueScore += 5; reasons.push('Bleu perdant 2/3 — revenge possible'); }
+  const last3WinnerCount = recent.slice(0, 3).filter(r => r.outcome !== loser).length;
+  if (last3WinnerCount >= 2) {
+    if (loser === 0) { blueScore += 5; reasons.push('Bleu perdant 2/3 \u2014 revenge possible'); }
+    else { orangeScore += 5; reasons.push('Orange perdant 2/3 \u2014 revenge possible'); }
   }
 
   const total = orangeScore + blueScore;
   const orangePct = Math.round((orangeScore / total) * 100);
   const bluePct = 100 - orangePct;
-  const predicted = orangePct > bluePct ? 0 : 1;
+  // predicted: 0 = Blue, 1 = Orange
+  const predicted = bluePct > orangePct ? 0 : 1;
   const confidence = Math.max(orangePct, bluePct);
 
   return { predicted, confidence, reasons, orangePct, bluePct };
@@ -368,22 +368,24 @@ function render() {
   document.getElementById('mainContent').style.display = 'block';
 
   const n = allRounds.length;
-  const oWins = allRounds.filter(r => r.outcome === 0).length;
+  // outcome 0 = Blue wins, outcome 1 = Orange wins
+  const bWins = allRounds.filter(r => r.outcome === 0).length;
+  const oWins = n - bWins;
 
   // Stats
   document.getElementById('totalRounds').textContent = n;
+  document.getElementById('blueRate').textContent = Math.round((bWins / n) * 100) + '%';
   document.getElementById('orangeRate').textContent = Math.round((oWins / n) * 100) + '%';
-  document.getElementById('blueRate').textContent = Math.round(((n - oWins) / n) * 100) + '%';
 
-  // Averages
-  const avgO = (allRounds.reduce((s, r) => s + r.finalValues[0], 0) / n).toFixed(2);
-  const avgB = (allRounds.reduce((s, r) => s + r.finalValues[1], 0) / n).toFixed(2);
+  // Averages (finalValues[0] = Blue, finalValues[1] = Orange)
+  const avgB = (allRounds.reduce((s, r) => s + r.finalValues[0], 0) / n).toFixed(2);
+  const avgO = (allRounds.reduce((s, r) => s + r.finalValues[1], 0) / n).toFixed(2);
   const avgT = (allRounds.reduce((s, r) => s + r.topCoefficient, 0) / n).toFixed(2);
-  document.getElementById('avgOrange').textContent = avgO + 'x';
   document.getElementById('avgBlue').textContent = avgB + 'x';
+  document.getElementById('avgOrange').textContent = avgO + 'x';
   document.getElementById('avgTop').textContent = avgT + 'x';
 
-  // Streaks
+  // Streaks (outcome 0 = Blue, outcome 1 = Orange)
   let curStreak = 1, curSide = allRounds[0].outcome;
   for (let i = 1; i < allRounds.length; i++) {
     if (allRounds[i].outcome === curSide) curStreak++;
@@ -391,18 +393,18 @@ function render() {
   }
   const streakEl = document.getElementById('currentStreak');
   streakEl.textContent = curStreak;
-  streakEl.style.color = curSide === 0 ? 'var(--orange)' : 'var(--blue)';
+  streakEl.style.color = curSide === 0 ? 'var(--blue)' : 'var(--orange)';
 
   let maxO = 0, maxB = 0, tmp = 1;
   for (let i = 1; i < allRounds.length; i++) {
     if (allRounds[i].outcome === allRounds[i - 1].outcome) { tmp++; }
     else {
-      if (allRounds[i - 1].outcome === 0) maxO = Math.max(maxO, tmp);
+      if (allRounds[i - 1].outcome === 1) maxO = Math.max(maxO, tmp);
       else maxB = Math.max(maxB, tmp);
       tmp = 1;
     }
   }
-  if (allRounds[allRounds.length - 1].outcome === 0) maxO = Math.max(maxO, tmp);
+  if (allRounds[allRounds.length - 1].outcome === 1) maxO = Math.max(maxO, tmp);
   else maxB = Math.max(maxB, tmp);
   document.getElementById('maxOrange').textContent = maxO;
   document.getElementById('maxBlue').textContent = maxB;
@@ -412,7 +414,8 @@ function render() {
   const predCard = document.getElementById('predCard');
   const predContent = document.getElementById('predContent');
   if (pred) {
-    const isO = pred.predicted === 0;
+    // predicted 0 = Blue, predicted 1 = Orange
+    const isO = pred.predicted === 1;
     predCard.className = 'prediction-card ' + (isO ? 'pred-orange' : 'pred-blue');
     predContent.innerHTML = `
       <div class="pred-result">
@@ -429,29 +432,29 @@ function render() {
         <div style="height:100%;width:${pred.confidence}%;background:${isO ? 'var(--orange)' : 'var(--blue)'};border-radius:2px;transition:width .6s ease"></div>
       </div>
       <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:.5rem;color:var(--text3)">
-        <span>Orange ${pred.orangePct}%</span>
         <span>Bleu ${pred.bluePct}%</span>
+        <span>Orange ${pred.orangePct}%</span>
       </div>
       <div class="pred-reasons">
         ${pred.reasons.map(r => '<div class="pred-reason"><div class="dot"></div>' + r + '</div>').join('')}
       </div>`;
   }
 
-  // Race Track (last 12)
+  // Race Track (last 12) — finalValues[0] = Blue, finalValues[1] = Orange
   const track = document.getElementById('raceTrack');
   const trackRounds = allRounds.slice(0, 12);
   track.innerHTML = trackRounds.map((r, i) => {
-    const a = r.finalValues[0], b = r.finalValues[1];
+    const blueCoef = r.finalValues[0], orangeCoef = r.finalValues[1];
     const top = r.topCoefficient;
-    const total = a + b;
-    const oPct = (a / total * 100).toFixed(1);
-    const bPct = (b / total * 100).toFixed(1);
-    const isO = r.outcome === 0;
+    const total = blueCoef + orangeCoef;
+    const bPct = (blueCoef / total * 100).toFixed(1);
+    const oPct = (orangeCoef / total * 100).toFixed(1);
+    const isO = r.outcome === 1; // outcome 1 = Orange wins
     return `<div class="race-row ${isO ? 'orange-won' : 'blue-won'} ${i === 0 ? 'new-round' : ''}">
-      <div class="lane-orange" style="width:${oPct}%"></div>
       <div class="lane-blue" style="width:${bPct}%"></div>
-      <span class="coef-label coef-orange" style="right:${bPct}%">${a.toFixed(1)}x</span>
-      <span class="coef-label coef-blue" style="left:${oPct}%">${b.toFixed(1)}x</span>
+      <div class="lane-orange" style="width:${oPct}%"></div>
+      <span class="coef-label coef-blue" style="right:${oPct}%">${blueCoef.toFixed(1)}x</span>
+      <span class="coef-label coef-orange" style="left:${bPct}%">${orangeCoef.toFixed(1)}x</span>
       <span class="winner-label">${top.toFixed(1)}x</span>
     </div>`;
   }).join('');
@@ -459,16 +462,16 @@ function render() {
   // Chart
   drawChart();
 
-  // Table (last 30)
+  // Table (last 30) — finalValues[0] = Blue, finalValues[1] = Orange
   const table = document.getElementById('historyTable');
   const tableRounds = allRounds.slice(0, 30);
   table.innerHTML = tableRounds.map((r, i) => {
-    const a = r.finalValues[0], b = r.finalValues[1];
-    const isO = r.outcome === 0;
+    const blueCoef = r.finalValues[0], orangeCoef = r.finalValues[1];
+    const isO = r.outcome === 1; // outcome 1 = Orange wins
     return `<div class="table-row ${i === 0 ? 'new-round' : ''}">
       <div class="num">${n - i}</div>
-      <div class="coef-o">${a.toFixed(2)}x</div>
-      <div class="coef-b">${b.toFixed(2)}x</div>
+      <div class="coef-b">${blueCoef.toFixed(2)}x</div>
+      <div class="coef-o">${orangeCoef.toFixed(2)}x</div>
       <div class="winner"><span class="${isO ? 'w-o' : 'w-b'}">${isO ? 'ORANGE' : 'BLEU'}</span></div>
       <div class="top">${r.topCoefficient.toFixed(2)}x</div>
     </div>`;
@@ -495,14 +498,12 @@ function drawChart() {
   const cw = W - pad.l - pad.r;
   const ch = H - pad.t - pad.b;
 
-  // Find max coef for scale
   let maxCoef = 1;
   for (const r of rounds) {
     maxCoef = Math.max(maxCoef, r.finalValues[0], r.finalValues[1]);
   }
   maxCoef = Math.ceil(maxCoef / 5) * 5 || 5;
 
-  // Grid lines
   ctx.strokeStyle = 'rgba(255,255,255,0.04)';
   ctx.lineWidth = 1;
   ctx.font = '9px Inter, system-ui';
@@ -514,9 +515,7 @@ function drawChart() {
     ctx.fillText(v + 'x', pad.l - 4, y + 3);
   }
 
-  // Draw lines
   function drawLine(getVal, color, glowColor) {
-    // Glow
     ctx.strokeStyle = glowColor;
     ctx.lineWidth = 6;
     ctx.lineJoin = 'round';
@@ -528,7 +527,6 @@ function drawChart() {
     }
     ctx.stroke();
 
-    // Line
     ctx.strokeStyle = color;
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -539,7 +537,6 @@ function drawChart() {
     }
     ctx.stroke();
 
-    // Last point dot
     const last = rounds[rounds.length - 1];
     const lx = pad.l + cw;
     const ly = pad.t + ch - (Math.min(getVal(last), maxCoef) / maxCoef) * ch;
@@ -547,10 +544,10 @@ function drawChart() {
     ctx.beginPath(); ctx.arc(lx, ly, 3, 0, Math.PI * 2); ctx.fill();
   }
 
-  drawLine(r => r.finalValues[0], '#f97316', 'rgba(249,115,22,0.15)');
-  drawLine(r => r.finalValues[1], '#3b82f6', 'rgba(59,130,246,0.15)');
+  // finalValues[0] = Blue (drawn in blue), finalValues[1] = Orange (drawn in orange)
+  drawLine(r => r.finalValues[0], '#3b82f6', 'rgba(59,130,246,0.15)');
+  drawLine(r => r.finalValues[1], '#f97316', 'rgba(249,115,22,0.15)');
 
-  // X axis labels
   ctx.fillStyle = 'rgba(255,255,255,0.2)';
   ctx.textAlign = 'center';
   ctx.font = '8px Inter, system-ui';
@@ -563,21 +560,19 @@ function drawChart() {
   // Legend
   ctx.font = 'bold 9px Inter, system-ui';
   ctx.textAlign = 'left';
-  ctx.fillStyle = '#f97316';
-  ctx.fillText('● Orange', pad.l, pad.t - 0);
   ctx.fillStyle = '#3b82f6';
-  ctx.fillText('● Bleu', pad.l + 55, pad.t - 0);
+  ctx.fillText('\u25CF Bleu', pad.l, pad.t - 0);
+  ctx.fillStyle = '#f97316';
+  ctx.fillText('\u25CF Orange', pad.l + 45, pad.t - 0);
 }
 
 // ===== POLL LOOP =====
 async function poll() {
   try {
-    // Re-auth if no session
     if (!sessionId) await auth();
 
     const rounds = await fetchHistory();
     if (rounds.length === 0) {
-      // Session might be expired, re-auth
       sessionId = null;
       return;
     }
@@ -606,18 +601,15 @@ async function init() {
     document.getElementById('statusText').textContent = 'Chargement historique...';
     await poll();
     document.getElementById('statusBar').classList.remove('offline');
-    // Poll every 5 seconds
     pollInterval = setInterval(poll, 5000);
   } catch (e) {
     console.error('Init error:', e);
     document.getElementById('statusText').textContent = 'Hors ligne';
     document.getElementById('statusBar').classList.add('offline');
-    // Retry after 10s
     setTimeout(init, 10000);
   }
 }
 
-// Handle resize for chart
 window.addEventListener('resize', () => { if (allRounds.length > 0) drawChart(); });
 
 init();
